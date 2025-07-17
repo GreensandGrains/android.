@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - Smart Serve</title>
+    <link href="profile.css" rel="stylesheet" type="text/css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="security-styles.css" rel="stylesheet" type="text/css" />
+    <script src="auth.js"></script>
+</head>
+<body>
+    <!-- Animated Space Background -->
+    <div class="space-background">
+        <div class="stars-layer"></div>
+        <div class="nebula-layer"></div>
+        <div class="galaxy-layer"></div>
+        <div class="asteroid-field"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo" onclick="window.location.href='index.html'">
+                <i class="fas fa-rocket"></i>
+                <span>Smart Serve</span>
+            </div>
+            <nav class="header-nav">
+                <a href="index.html">Home</a>
+                <a href="bot-builder.html">Bots</a>
+                <a href="template.html">Templates</a>
+                <a href="coming-soon.html">Learn</a>
+            </nav>
+            <div class="header-actions">
+                <button class="back-btn" onclick="window.history.back()">
+                    <i class="fas fa-arrow-left"></i>
+                    Back
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="profile-container">
+            <!-- Profile Header -->
+            <div class="profile-header">
+                <div class="profile-avatar-large">
+                    <img src="https://via.placeholder.com/120x120/ffffff/000000?text=U" alt="Profile Avatar" id="profile-avatar-img" />
+                    <button class="edit-avatar-btn" onclick="editAvatar()">
+                        <i class="fas fa-camera"></i>
+                    </button>
+                </div>
+                <div class="profile-info">
+                    <h1 class="profile-name" id="profile-name">User</h1>
+                    <p class="profile-username">@user</p>
+                    <p class="profile-bio" id="profile-bio">Bot builder and AI enthusiast. Creating intelligent solutions for the future.</p>
+                    <div class="profile-stats">
+                        <div class="stat">
+                            <span class="stat-number">12</span>
+                            <span class="stat-label">Bots Created</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number">45</span>
+                            <span class="stat-label">Deployments</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number">8</span>
+                            <span class="stat-label">Templates Used</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="profile-actions">
+                    <button class="edit-profile-btn" onclick="editProfile()">
+                        <i class="fas fa-edit"></i>
+                        Edit Profile
+                    </button>
+                    <button class="settings-btn" onclick="goToSettings()">
+                        <i class="fas fa-cog"></i>
+                        Settings
+                    </button>
+                </div>
+            </div>
+
+            <!-- Profile Tabs -->
+            <div class="profile-tabs">
+                <button class="tab-btn active" onclick="showTab('bots')">
+                    <i class="fas fa-robot"></i>
+                    My Bots
+                </button>
+                <button class="tab-btn" onclick="showTab('templates')">
+                    <i class="fas fa-code"></i>
+                    Templates
+                </button>
+                <button class="tab-btn" onclick="showTab('activity')">
+                    <i class="fas fa-chart-line"></i>
+                    Activity
+                </button>
+                <button class="tab-btn" onclick="showTab('favorites')">
+                    <i class="fas fa-heart"></i>
+                    Favorites
+                </button>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="tab-content">
+                <!-- Bots Tab -->
+                <div class="tab-panel active" id="bots-panel">
+                    <div class="content-header">
+                        <h2>My Bots</h2>
+                        <button class="create-new-btn" onclick="window.location.href='bot-builder.html'">
+                            <i class="fas fa-plus"></i>
+                            Create New Bot
+                        </button>
+                    </div>
+                    <div class="bots-grid">
+                        <div class="bot-card">
+                            <div class="bot-icon">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <h3>Moderation Bot</h3>
+                            <p>Advanced server moderation with custom rules</p>
+                            <div class="bot-stats">
+                                <span><i class="fas fa-eye"></i> 1.2k views</span>
+                                <span><i class="fas fa-heart"></i> 45 likes</span>
+                            </div>
+                            <div class="bot-actions">
+                                <button class="btn-secondary">Edit</button>
+                                <button class="btn-primary">Deploy</button>
+                            </div>
+                        </div>
+                        
+                        <div class="bot-card">
+                            <div class="bot-icon">
+                                <i class="fas fa-music"></i>
+                            </div>
+                            <h3>Music Bot</h3>
+                            <p>High-quality music streaming for Discord</p>
+                            <div class="bot-stats">
+                                <span><i class="fas fa-eye"></i> 856 views</span>
+                                <span><i class="fas fa-heart"></i> 32 likes</span>
+                            </div>
+                            <div class="bot-actions">
+                                <button class="btn-secondary">Edit</button>
+                                <button class="btn-primary">Deploy</button>
+                            </div>
+                        </div>
+
+                        <div class="bot-card">
+                            <div class="bot-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <h3>AI Assistant</h3>
+                            <p>Intelligent conversational AI helper</p>
+                            <div class="bot-stats">
+                                <span><i class="fas fa-eye"></i> 2.1k views</span>
+                                <span><i class="fas fa-heart"></i> 78 likes</span>
+                            </div>
+                            <div class="bot-actions">
+                                <button class="btn-secondary">Edit</button>
+                                <button class="btn-primary">Deploy</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Templates Tab -->
+                <div class="tab-panel" id="templates-panel">
+                    <div class="content-header">
+                        <h2>Used Templates</h2>
+                        <button class="browse-btn" onclick="window.location.href='template.html'">
+                            <i class="fas fa-search"></i>
+                            Browse Templates
+                        </button>
+                    </div>
+                    <div class="templates-list">
+                        <div class="template-item">
+                            <i class="fas fa-shield-alt"></i>
+                            <div class="template-info">
+                                <h4>Moderation Bot Template</h4>
+                                <p>Used 3 times • Last used 2 days ago</p>
+                            </div>
+                            <button class="use-again-btn">Use Again</button>
+                        </div>
+                        <div class="template-item">
+                            <i class="fas fa-music"></i>
+                            <div class="template-info">
+                                <h4>Music Bot Template</h4>
+                                <p>Used 2 times • Last used 1 week ago</p>
+                            </div>
+                            <button class="use-again-btn">Use Again</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Activity Tab -->
+                <div class="tab-panel" id="activity-panel">
+                    <div class="content-header">
+                        <h2>Recent Activity</h2>
+                    </div>
+                    <div class="activity-feed">
+                        <div class="activity-item">
+                            <div class="activity-icon">
+                                <i class="fas fa-plus"></i>
+                            </div>
+                            <div class="activity-content">
+                                <p><strong>Created</strong> a new bot "AI Assistant"</p>
+                                <span class="activity-time">2 hours ago</span>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon">
+                                <i class="fas fa-rocket"></i>
+                            </div>
+                            <div class="activity-content">
+                                <p><strong>Deployed</strong> "Moderation Bot" to production</p>
+                                <span class="activity-time">1 day ago</span>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon">
+                                <i class="fas fa-edit"></i>
+                            </div>
+                            <div class="activity-content">
+                                <p><strong>Updated</strong> "Music Bot" configuration</p>
+                                <span class="activity-time">3 days ago</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Favorites Tab -->
+                <div class="tab-panel" id="favorites-panel">
+                    <div class="content-header">
+                        <h2>Favorite Bots</h2>
+                    </div>
+                    <p class="empty-state">You haven't favorited any bots yet. Start exploring!</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="profile.js"></script>
+</body>
+</html>
+</replit_final_file>

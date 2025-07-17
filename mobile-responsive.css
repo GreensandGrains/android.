@@ -1,0 +1,16 @@
+
+/* Desktop view for all devices - no responsive changes */
+/* This file maintains desktop layout on all screen sizes */
+
+/* Optional: Add horizontal scroll for very small screens to maintain desktop layout */
+@media (max-width: 1200px) {
+    body {
+        overflow-x: auto;
+    }
+    
+    .login-container,
+    .main-content,
+    .sidebar {
+        min-width: 1200px;
+    }
+}

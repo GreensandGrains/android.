@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Smart Serve</title>
+    <link href="login.css" rel="stylesheet" type="text/css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="security-styles.css" rel="stylesheet" type="text/css" />
+    <link href="mobile-responsive.css" rel="stylesheet" type="text/css" />
+    <script src="auth.js"></script>
+</head>
+<body>
+    <!-- Animated Space Background -->
+    <div class="space-background">
+        <div class="stars-layer"></div>
+        <div class="nebula-layer"></div>
+        <div class="galaxy-layer"></div>
+        <div class="asteroid-field"></div>
+    </div>
+
+    <div class="login-container">
+        <!-- Left Side - Login Form -->
+        <div class="login-form-section">
+            <div class="login-header">
+                <div class="logo">
+                    <i class="fas fa-rocket"></i>
+                    <span>Smart Serve</span>
+                </div>
+                <h1>Welcome Back</h1>
+                <p>Sign in to continue to your account</p>
+            </div>
+
+            <div class="login-form">
+                <!-- Social Login Buttons -->
+                <div class="social-login">
+                    <button class="social-btn discord-btn" onclick="loginWithDiscord()">
+                        <i class="fab fa-discord"></i>
+                        <span>Login with Discord</span>
+                    </button>
+
+                    <button class="social-btn smars-btn" onclick="loginWithSmars()">
+                        <i class="fas fa-rocket"></i>
+                        <span>Login with Smars</span>
+                    </button>
+                </div>
+
+                <div class="divider">
+                    <span>OR</span>
+                </div>
+
+                <!-- Email/Password Form -->
+                <form class="email-form" id="loginForm">
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-envelope"></i>
+                            <input type="email" id="email" name="email" placeholder="Enter your email" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                            <button type="button" class="toggle-password" onclick="togglePassword()">
+                                <i class="fas fa-eye" id="toggleIcon"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-options">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="remember">
+                            <span class="checkmark"></span>
+                            Remember me
+                        </label>
+                        <a href="#" class="forgot-password">Forgot password?</a>
+                    </div>
+
+                    <button type="submit" class="login-btn">
+                        <span>Sign In</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </form>
+
+                <div class="signup-link">
+                    <p>Don't have an account? <a href="#">Sign up here</a></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side - Galaxy Image -->
+        <div class="galaxy-section">
+            <div class="galaxy-container">
+                <img src="https://images.unsplash.com/photo-1502134249126-9f3755a50d78?w=1200&q=80" alt="Galaxy" class="galaxy-image">
+                <div class="galaxy-overlay">
+                    <div class="floating-particles">
+                        <div class="particle"></div>
+                        <div class="particle"></div>
+                        <div class="particle"></div>
+                        <div class="particle"></div>
+                        <div class="particle"></div>
+                    </div>
+                    <div class="galaxy-text">
+                        <h2>Explore the Universe</h2>
+                        <p>Join millions of developers building the future with Smart Serve technology</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="login.js"></script>
+</body>
+</html>

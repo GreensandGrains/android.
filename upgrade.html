@@ -1,0 +1,152 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upgrade to Core - Smart Serve</title>
+    <link href="upgrade.css" rel="stylesheet" type="text/css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Animated Space Background -->
+    <div class="space-background">
+        <div class="stars-layer"></div>
+        <div class="nebula-layer"></div>
+        <div class="galaxy-layer"></div>
+        <div class="asteroid-field"></div>
+    </div>
+
+    <!-- Modal Overlay -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="upgrade-modal">
+            <div class="modal-header">
+                <div class="modal-logo">
+                    <i class="fas fa-crown"></i>
+                    <h2>Upgrade to Core</h2>
+                </div>
+                <button class="close-btn" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="modal-content">
+                <div class="pricing-header">
+                    <h3>Unlock the full potential of Smart Serve</h3>
+                    <p>Get access to advanced features, unlimited bot creation, and priority support</p>
+                </div>
+
+                <div class="pricing-plans">
+                    <div class="plan-card starter">
+                        <div class="plan-header">
+                            <h4>Starter</h4>
+                            <div class="plan-price">
+                                <span class="price">$0</span>
+                                <span class="period">/month</span>
+                            </div>
+                        </div>
+                        <div class="plan-features">
+                            <div class="feature">
+                                <i class="fas fa-check"></i>
+                                <span>3 Bot Templates</span>
+                            </div>
+                            <div class="feature">
+                                <i class="fas fa-check"></i>
+                                <span>Basic Customization</span>
+                            </div>
+                            <div class="feature">
+                                <i class="fas fa-check"></i>
+                                <span>Community Support</span>
+                            </div>
+                        </div>
+                        <button class="plan-btn current">Current Plan</button>
+                    </div>
+
+                    <div class="plan-card core featured">
+                        <div class="plan-badge">Most Popular</div>
+                        <div class="plan-header">
+                            <h4>Core</h4>
+                            <div class="plan-price">
+                                <span class="price">$9.99</span>
+                                <span class="period">/month</span>
+                            </div>
+                        </div>
+                        <div class="plan-features">
+                            <div class="feature">
+                                <i class="fas fa-check"></i>
+                                <span>Unlimited Bot Creation</span>
+                            </div>
+                            <div class="feature">
+                                <i class="fas fa-check"></i>
+                                <span>Advanced AI Features</span>
+                            </div>
+                            <div class="feature">
+                                <i class="fas fa-check"></i>
+                                <span>Custom Integrations</span>
+                            </div>
+                            <div class="feature">
+                                <i class="fas fa-check"></i>
+                                <span>Priority Support</span>
+                            </div>
+                            <div class="feature">
+                                <i class="fas fa-check"></i>
+                                <span>Analytics Dashboard</span>
+                            </div>
+                        </div>
+                        <button class="plan-btn upgrade">Upgrade Now</button>
+                    </div>
+
+                    <div class="plan-card enterprise">
+                        <div class="plan-header">
+                            <h4>Enterprise</h4>
+                            <div class="plan-price">
+                                <span class="price">$29.99</span>
+                                <span class="period">/month</span>
+                            </div>
+                        </div>
+                        <div class="plan-features">
+                            <div class="feature">
+                                <i class="fas fa-check"></i>
+                                <span>Everything in Core</span>
+                            </div>
+                            <div class="feature">
+                                <i class="fas fa-check"></i>
+                                <span>Team Collaboration</span>
+                            </div>
+                            <div class="feature">
+                                <i class="fas fa-check"></i>
+                                <span>White-label Solutions</span>
+                            </div>
+                            <div class="feature">
+                                <i class="fas fa-check"></i>
+                                <span>24/7 Dedicated Support</span>
+                            </div>
+                        </div>
+                        <button class="plan-btn">Contact Sales</button>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <div class="security-badges">
+                        <div class="badge">
+                            <i class="fas fa-shield-alt"></i>
+                            <span>Secure Payment</span>
+                        </div>
+                        <div class="badge">
+                            <i class="fas fa-undo"></i>
+                            <span>30-day Money Back</span>
+                        </div>
+                        <div class="badge">
+                            <i class="fas fa-times-circle"></i>
+                            <span>Cancel Anytime</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="upgrade.js"></script>
+</body>
+</html>

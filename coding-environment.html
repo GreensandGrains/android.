@@ -1,0 +1,191 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coding Environment - Smart Serve</title>
+    <link href="coding-environment.css" rel="stylesheet" type="text/css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Home Icon -->
+    <div class="home-icon" onclick="window.location.href='index.html'">
+        <i class="fas fa-home"></i>
+    </div>
+
+    <!-- Files Sidebar Toggle -->
+    <div class="sidebar-toggle" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+    </div>
+
+    <!-- Files Sidebar -->
+    <div class="files-sidebar" id="filesSidebar">
+        <div class="sidebar-header">
+            <h3>Files</h3>
+            <button class="close-sidebar" onclick="toggleSidebar()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="files-tree">
+            <div class="file-item" onclick="createNewFile()">
+                <i class="fas fa-plus"></i>
+                <span>New File</span>
+            </div>
+            <div class="file-item folder">
+                <i class="fas fa-folder"></i>
+                <span>src</span>
+            </div>
+            <div class="file-item">
+                <i class="fas fa-file-code"></i>
+                <span>index.js</span>
+            </div>
+            <div class="file-item">
+                <i class="fas fa-file-code"></i>
+                <span>bot.js</span>
+            </div>
+            <div class="file-item">
+                <i class="fas fa-file"></i>
+                <span>package.json</span>
+            </div>
+            <div class="file-item">
+                <i class="fas fa-file"></i>
+                <span>README.md</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+        <!-- Left Section - Console -->
+        <div class="console-main-section">
+            <div class="console-main-header">
+                <h3><i class="fas fa-terminal"></i> Console</h3>
+            </div>
+            <div class="console-main-content">
+                <div class="coming-soon-console">
+                    <div class="coming-soon-animation">
+                        <div class="gear-container">
+                            <i class="fas fa-cog fa-spin"></i>
+                            <i class="fas fa-cog fa-spin gear-2"></i>
+                        </div>
+                    </div>
+                    <h3>Console Coming Soon!</h3>
+                    <p>Interactive console features will be available soon.</p>
+                    <div class="console-preview">
+                        <div class="console-line">$ npm install discord.js</div>
+                        <div class="console-line">$ node bot.js</div>
+                        <div class="console-line">Bot is online!</div>
+                        <div class="console-cursor">|</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Section - Code Editor -->
+        <div class="code-section">
+            <div class="tabs-container">
+                <div class="tab active" data-file="index.js">
+                    <span>index.js</span>
+                    <i class="fas fa-times tab-close"></i>
+                </div>
+                <div class="tab" data-file="bot.js">
+                    <span>bot.js</span>
+                    <i class="fas fa-times tab-close"></i>
+                </div>
+                <div class="tab" data-file="package.json">
+                    <span>package.json</span>
+                    <i class="fas fa-times tab-close"></i>
+                </div>
+                <div class="new-tab" onclick="createNewTab()">
+                    <i class="fas fa-plus"></i>
+                </div>
+            </div>
+            <div class="editor-container">
+                <div class="editor-content active" data-file="index.js">
+                    <textarea class="code-editor" placeholder="// Add your JavaScript code here..."></textarea>
+                </div>
+                <div class="editor-content" data-file="bot.js">
+                    <textarea class="code-editor" placeholder="// Add your bot code here..."></textarea>
+                </div>
+                <div class="editor-content" data-file="package.json">
+                    <textarea class="code-editor" placeholder="// Add your package.json content here..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Section - Output & Terminal -->
+        <div class="console-section">
+            <div class="console-header">
+                <div class="console-tabs">
+                    <div class="console-tab active" data-console="terminal">
+                        <i class="fas fa-terminal"></i>
+                        Terminal
+                    </div>
+                    <div class="console-tab" data-console="output">
+                        <i class="fas fa-play"></i>
+                        Output
+                    </div>
+                    <div class="console-tab" data-console="problems">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Problems
+                    </div>
+                </div>
+                <div class="console-actions">
+                    <button class="console-btn" onclick="clearConsole()">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    <button class="console-btn" onclick="runCode()">
+                        <i class="fas fa-play"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="console-content">
+                <div class="console-panel active" data-console="terminal">
+                    <div class="terminal-output" id="terminalOutput">
+                        <div class="terminal-line">
+                            <span class="terminal-prompt">$</span>
+                            <span class="terminal-cursor">|</span>
+                        </div>
+                    </div>
+                    <input type="text" class="terminal-input" placeholder="Enter command..." />
+                </div>
+                <div class="console-panel" data-console="output">
+                    <div class="output-content" id="outputContent">
+                        <p>Code output will appear here...</p>
+                    </div>
+                </div>
+                <div class="console-panel" data-console="problems">
+                    <div class="problems-content" id="problemsContent">
+                        <p>No problems detected.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Controls (only visible to admins) -->
+    <div class="admin-controls" id="adminControls" style="display: none;">
+        <div class="admin-panel">
+            <h3>Admin Controls</h3>
+            <div class="admin-actions">
+                <button class="admin-btn" onclick="saveTemplate()">
+                    <i class="fas fa-save"></i>
+                    Save Template
+                </button>
+                <button class="admin-btn" onclick="deployBot()">
+                    <i class="fas fa-rocket"></i>
+                    Deploy Bot
+                </button>
+                <button class="admin-btn" onclick="manageFiles()">
+                    <i class="fas fa-folder-open"></i>
+                    Manage Files
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="coding-environment.js"></script>
+</body>
+</html>

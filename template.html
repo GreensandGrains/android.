@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Templates - Smart Serve</title>
+    <link href="template.css" rel="stylesheet" type="text/css" />
+    <link href="language.css" rel="stylesheet" type="text/css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Animated Space Background -->
+    <div class="space-background">
+        <div class="stars-layer"></div>
+        <div class="nebula-layer"></div>
+        <div class="galaxy-layer"></div>
+        <div class="asteroid-field"></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo" onclick="window.location.href='index.html'">
+                <i class="fas fa-rocket"></i>
+                <span>Smart Serve</span>
+            </div>
+            <div class="nav-menu">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="bot-builder.html" class="nav-link">Bots</a>
+                <a href="template.html" class="nav-link active">Templates</a>
+                <a href="coming-soon.html" class="nav-link">Learn</a>
+            </div>
+            <div class="nav-actions">
+                <button class="login-btn" onclick="window.location.href='login.html'">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Login
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-header">
+            <h1 data-translate="botTemplates">Bot Templates</h1>
+            <p data-translate="templatesDesc">Choose from our collection of pre-built bot templates</p>
+        </div>
+
+        <div class="templates-grid">
+            <div class="template-card moderation-bot">
+                <div class="card-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h3>Moderation Bot</h3>
+                <p>Advanced server moderation with custom rules and automated actions</p>
+                <div class="card-features">
+                    <span>Auto-moderation</span>
+                    <span>Custom rules</span>
+                    <span>Warning system</span>
+                </div>
+                <button class="use-template-btn">Use Template</button>
+            </div>
+
+            <div class="template-card music-bot">
+                <div class="card-icon">
+                    <i class="fas fa-music"></i>
+                </div>
+                <h3>Music Bot</h3>
+                <p>Stream music and manage playlists for your server</p>
+                <div class="card-features">
+                    <span>Music streaming</span>
+                    <span>Playlist control</span>
+                    <span>Queue management</span>
+                </div>
+                <button class="use-template-btn">Use Template</button>
+            </div>
+
+            <div class="template-card ai-bot">
+                <div class="card-icon">
+                    <i class="fas fa-brain"></i>
+                </div>
+                <h3>AI Bot</h3>
+                <p>Intelligent conversational bot powered by AI</p>
+                <div class="card-features">
+                    <span>Natural language</span>
+                    <span>Smart responses</span>
+                    <span>Learning ability</span>
+                </div>
+                <button class="use-template-btn">Use Template</button>
+            </div>
+
+            <div class="template-card management-bot">
+                <div class="card-icon">
+                    <i class="fas fa-tasks"></i>
+                </div>
+                <h3>Management Bot</h3>
+                <p>Streamline server management and administration</p>
+                <div class="card-features">
+                    <span>Role management</span>
+                    <span>Channel control</span>
+                    <span>User analytics</span>
+                </div>
+                <button class="use-template-btn">Use Template</button>
+            </div>
+
+            <div class="template-card economy-bot">
+                <div class="card-icon">
+                    <i class="fas fa-coins"></i>
+                </div>
+                <h3>Economy Bot</h3>
+                <p>Create virtual economies with currency and trading systems</p>
+                <div class="card-features">
+                    <span>Virtual currency</span>
+                    <span>Trading system</span>
+                    <span>Leaderboards</span>
+                </div>
+                <button class="use-template-btn">Use Template</button>
+            </div>
+
+            <div class="template-card gaming-bot">
+                <div class="card-icon">
+                    <i class="fas fa-gamepad"></i>
+                </div>
+                <h3>Gaming Bot</h3>
+                <p>Enhance gaming communities with interactive features</p>
+                <div class="card-features">
+                    <span>Game stats</span>
+                    <span>Tournaments</span>
+                    <span>Team management</span>
+                </div>
+                <button class="use-template-btn">Use Template</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <i class="fas fa-rocket"></i>
+                    <span>Smart Serve</span>
+                </div>
+                <p>&copy; 2024 Smart Serve. All rights reserved. Serving the universe, one solution at a time.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="auth.js"></script>
+    <script src="lang.js"></script>
+    <script src="template.js"></script>
+</body>
+</html>
