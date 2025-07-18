@@ -55,8 +55,7 @@ app.get('/auth/discord', (req, res) => {
         state: state
     });
     
-    const discordAuthUrl = `https://discord.com/api/oauth2/authorize?${params.toString()}`;
-    res.redirect(discordAuthUrl);
+    const discordAuthUrl = `https://discord.com/oauth2/authorize?client_id=1372226433191247983&response_type=code&redirect_uri=https%3A%2F%2Fandroid-m682.onrender.com%2Fapi%2Fauth%2Fdiscord%2Fcallback&scope=identify+email`;
 });
 
 // Discord OAuth callback
