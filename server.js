@@ -39,7 +39,7 @@ function generateState() {
 
 // Home route
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    res.sendFile(path.join(__dirname, 'bot-builder.html'));
 });
 
 // Discord OAuth initiation
