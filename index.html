@@ -256,18 +256,50 @@
 
     <script src="lang.js"></script>
     <script src="script.js"></script>
-    <script>
-        // Check if user is authenticated and redirect to bot-builder
+    // Check if user is authenticated and update UI accordingly
         document.addEventListener('DOMContentLoaded', function() {
             const userData = localStorage.getItem('userData');
+            const sessionToken = sessionStorage.getItem('sessionToken');
             const getStartedBtn = document.getElementById('get-started-btn');
+            const loginBtn = document.getElementById('login-btn');
+            const userProfile = document.getElementById('user-profile');
             
-            if (userData) {
-                // User is authenticated, redirect to bot-builder immediately
-                window.location.href = 'bot-builder.html';
+            if (userData && sessionToken) {
+                // User is authenticated, update UI
+                try {
+                    const user = JSON.parse(userData);
+                    
+                    // Hide login button, show user profile
+                    if (loginBtn) loginBtn.style.display = 'none';
+                    if (userProfile) {
+                        userProfile.style.display = 'flex';
+                        const userAvatar = document.getElementById('user-avatar');
+                        const userName = document.getElementById('user-name');
+                        
+                        if (userAvatar) {
+                            userAvatar.src = user.avatar || `https://cdn.discordapp.com/embed/avatars/${Math.floor(Math.random() * 5)}.png`;
+                        }
+                        if (userName) {
+                            userName.textContent = user.username || 'User';
+                        }
+                    }
+                    
+                    // Update get started button to go to bot-builder
+                    if (getStartedBtn) {
+                        getStartedBtn.textContent = 'Go to Bot Builder';
+                        getStartedBtn.onclick = () => window.location.href = 'bot-builder.html';
+                    }
+                } catch (error) {
+                    console.error('Error parsing user data:', error);
+                    // Clear corrupted data
+                    localStorage.removeItem('userData');
+                    sessionStorage.clear();
+                }
             } else {
-                // User not authenticated, show login
-                getStartedBtn.onclick = () => window.location.href = 'login.html';
+                // User not authenticated, show login options
+                if (getStartedBtn) {
+                    getStartedBtn.onclick = () => window.location.href = 'login.html';
+                }
             }
         });
     </script>
