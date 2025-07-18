@@ -22,43 +22,33 @@
         <div class="asteroid-field"></div>
     </div>
 
-    <!-- Top Header with User Profile -->
-    <header class="top-header">
-        <div class="header-container">
-            <div class="header-logo" onclick="window.location.href='bot-builder.html'">
-                <i class="fas fa-rocket"></i>
-                <span>Smart Serve</span>
-            </div>
-            <div class="header-actions">
-                <div class="user-dropdown" id="user-dropdown">
-                    <div class="user-trigger" onclick="toggleUserDropdown()">
-                        <img src="https://via.placeholder.com/40x40/ffffff/000000?text=U" alt="Profile" id="user-avatar" />
-                        <span id="user-name">User</span>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="dropdown-menu" id="dropdown-menu">
-                        <a href="profile.html" class="dropdown-item">
-                            <i class="fas fa-user"></i>
-                            Profile
-                        </a>
-                        <a href="bots.html" class="dropdown-item">
-                            <i class="fas fa-robot"></i>
-                            My Bots
-                        </a>
-                        <a href="template.html" class="dropdown-item">
-                            <i class="fas fa-code"></i>
-                            Templates
-                        </a>
-                        <div class="dropdown-divider"></div>
-                        <a href="#" onclick="authSystem.logout()" class="dropdown-item">
-                            <i class="fas fa-sign-out-alt"></i>
-                            Logout
-                        </a>
-                    </div>
-                </div>
-            </div>
+    <!-- User Profile Dropdown -->
+    <div class="user-dropdown" id="user-dropdown" style="position: fixed; top: 20px; right: 20px; z-index: 1001;">
+        <div class="user-trigger" onclick="toggleUserDropdown()">
+            <img src="https://via.placeholder.com/40x40/ffffff/000000?text=U" alt="Profile" id="user-avatar" />
+            <span id="user-name">User</span>
+            <i class="fas fa-chevron-down"></i>
         </div>
-    </header>
+        <div class="dropdown-menu" id="dropdown-menu">
+            <a href="profile.html" class="dropdown-item">
+                <i class="fas fa-user"></i>
+                Profile
+            </a>
+            <a href="bots.html" class="dropdown-item">
+                <i class="fas fa-robot"></i>
+                My Bots
+            </a>
+            <a href="template.html" class="dropdown-item">
+                <i class="fas fa-code"></i>
+                Templates
+            </a>
+            <div class="dropdown-divider"></div>
+            <a href="#" onclick="handleLogout()" class="dropdown-item">
+                <i class="fas fa-sign-out-alt"></i>
+                Logout
+            </a>
+        </div>
+    </div>
 
     <!-- Pricing Overlay -->
     <div class="pricing-overlay" id="pricing-overlay">
@@ -185,7 +175,7 @@
     </div>
 
     <!-- Main Content -->
-    <div class="main-content">
+    <div class="main-content" style="margin-top: 0;">
         <!-- User Profile Section -->
         <div class="user-profile-section" id="user-profile-section" style="display: none;">
             <div class="profile-info">

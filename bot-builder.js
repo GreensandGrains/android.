@@ -4,27 +4,257 @@ function isMobileDevice() {
     return false;
 }
 
+// Initialize page when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Load user data and update UI
+    loadUserData();
+    
+    // Initialize other components
+    initializeOrderForm();
+    initializeUserDropdown();
+});
+
+// Initialize order form functionality
+function initializeOrderForm() {
+    const makeOrderBtn = document.getElementById('make-order-btn');
+    const aiCreateBtn = document.getElementById('ai-create-btn');
+    const popupOverlay = document.getElementById('popup-overlay');
+    const popupClose = document.getElementById('popup-close');
+
+    if (makeOrderBtn) {
+        makeOrderBtn.addEventListener('click', handleMakeOrder);
+    }
+
+    if (aiCreateBtn) {
+        aiCreateBtn.addEventListener('click', function() {
+            if (popupOverlay) popupOverlay.style.display = 'flex';
+        });
+    }
+
+    if (popupClose) {
+        popupClose.addEventListener('click', function() {
+            if (popupOverlay) popupOverlay.style.display = 'none';
+        });
+    }
+
+    // Close popup when clicking outside
+    if (popupOverlay) {
+        popupOverlay.addEventListener('click', function(e) {
+            if (e.target === popupOverlay) {
+                popupOverlay.style.display = 'none';
+            }
+        });
+    }
+}
+
+// Initialize user dropdown functionality
+function initializeUserDropdown() {
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+        const dropdown = document.getElementById('user-dropdown');
+        if (dropdown && !dropdown.contains(event.target)) {
+            dropdown.classList.remove('active');
+        }
+    });
+
+    // Prevent dropdown from closing when clicking inside
+    const dropdownMenu = document.getElementById('dropdown-menu');
+    if (dropdownMenu) {
+        dropdownMenu.addEventListener('click', function(event) {
+            // Allow clicks on dropdown items to work normally
+            if (event.target.classList.contains('dropdown-item') || 
+                event.target.closest('.dropdown-item')) {
+                // Let the click proceed normally
+                return;
+            }
+            event.stopPropagation();
+        });
+    }
+}
+
 // Discord login functionality
 function loginWithDiscord() {
-    // Simulate Discord OAuth flow
-    const clientId = 'your_discord_client_id';
-    const redirectUri = encodeURIComponent(window.location.origin + '/auth/discord');
-    const scope = 'identify email';
-
-    const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}`;
-
-    // For demo purposes, simulate successful login
-    setTimeout(() => {
-        const mockUser = {
-            id: '123456789',
-            username: 'DiscordUser',
-            avatar: 'https://cdn.discordapp.com/avatars/123456789/example.png'
-        };
-        handleSuccessfulLogin(mockUser);
-    }, 2000);
-
-    alert('Discord login initiated... (Demo mode)');
+    // Redirect to server-side Discord OAuth endpoint
+    window.location.href = '/auth/discord';
 }
+
+// Load user data on page load
+function loadUserData() {
+    const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+    
+    if (!userData.username) {
+        // No user data found, redirect to login
+        window.location.href = 'login.html';
+        return;
+    }
+
+    // Update all user elements
+    const userAvatar = document.getElementById('user-avatar');
+    const userName = document.getElementById('user-name');
+    const profileAvatarLarge = document.getElementById('profile-avatar-large');
+    const profileUsername = document.getElementById('profile-username');
+    const userProfileSection = document.getElementById('user-profile-section');
+
+    const avatarUrl = userData.avatar || `https://cdn.discordapp.com/embed/avatars/${Math.floor(Math.random() * 5)}.png`;
+
+    // Update dropdown profile
+    if (userAvatar) userAvatar.src = avatarUrl;
+    if (userName) userName.textContent = userData.username;
+
+    // Update profile section
+    if (profileAvatarLarge) profileAvatarLarge.src = avatarUrl;
+    if (profileUsername) profileUsername.textContent = userData.username;
+    if (userProfileSection) userProfileSection.style.display = 'flex';
+
+    // Load user orders count
+    loadUserOrders();
+}
+
+// Load user orders
+async function loadUserOrders() {
+    try {
+        const sessionToken = sessionStorage.getItem('serverSessionToken');
+        if (!sessionToken) return;
+
+        const response = await fetch('/api/user/orders', {
+            headers: {
+                'Authorization': `Bearer ${sessionToken}`
+            }
+        });
+
+        if (response.ok) {
+            const orders = await response.json();
+            const orderCountElement = document.getElementById('order-count');
+            if (orderCountElement) {
+                orderCountElement.textContent = orders.length || 0;
+            }
+        }
+    } catch (error) {
+        console.error('Error loading user orders:', error);
+    }
+}
+
+// User dropdown functionality
+function toggleUserDropdown() {
+    const dropdown = document.getElementById('user-dropdown');
+    if (dropdown) {
+        dropdown.classList.toggle('active');
+    }
+}
+
+// Handle logout function
+function handleLogout() {
+    if (confirm('Are you sure you want to log out?')) {
+        // Clear all stored data
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        // Redirect to login page
+        window.location.href = 'login.html';
+    }
+}
+
+// Handle make order button click
+async function handleMakeOrder() {
+    const content = document.getElementById('bot-content').value.trim();
+    
+    if (!content) {
+        alert('Please enter bot content before making an order.');
+        return;
+    }
+
+    const makeOrderBtn = document.getElementById('make-order-btn');
+    const originalText = makeOrderBtn.innerHTML;
+    
+    try {
+        // Show loading state
+        makeOrderBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        makeOrderBtn.disabled = true;
+
+        const sessionToken = sessionStorage.getItem('serverSessionToken');
+        if (!sessionToken) {
+            throw new Error('No session token found');
+        }
+
+        const response = await fetch('/api/order', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${sessionToken}`
+            },
+            body: JSON.stringify({ content })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            alert('Order submitted successfully! Check your Discord DMs for confirmation.');
+            document.getElementById('bot-content').value = '';
+            loadUserOrders(); // Refresh order count
+        } else {
+            throw new Error(result.error || 'Failed to submit order');
+        }
+    } catch (error) {
+        console.error('Order submission error:', error);
+        alert('Failed to submit order. Please ensure your Discord DMs are enabled.');
+    } finally {
+        // Restore button state
+        makeOrderBtn.innerHTML = originalText;
+        makeOrderBtn.disabled = false;
+    }
+}
+
+// Navigation functions for sidebar
+function goToDeployments() {
+    window.location.href = 'coming-soon.html';
+}
+
+function goToTeams() {
+    window.location.href = 'coming-soon.html';
+}
+
+function goToLearn() {
+    window.location.href = 'coming-soon.html';
+}
+
+function goToQuests() {
+    window.location.href = 'coming-soon.html';
+}
+
+function goToMarketplace() {
+    window.location.href = 'coming-soon.html';
+}
+
+function openUpgradeModal() {
+    window.location.href = 'upgrade.html';
+}
+
+function showPricing() {
+    const pricingOverlay = document.getElementById('pricing-overlay');
+    if (pricingOverlay) {
+        pricingOverlay.style.display = 'flex';
+    }
+}
+
+// Close pricing modal
+document.addEventListener('DOMContentLoaded', function() {
+    const closePricing = document.getElementById('close-pricing');
+    const pricingOverlay = document.getElementById('pricing-overlay');
+    
+    if (closePricing) {
+        closePricing.addEventListener('click', function() {
+            if (pricingOverlay) pricingOverlay.style.display = 'none';
+        });
+    }
+    
+    if (pricingOverlay) {
+        pricingOverlay.addEventListener('click', function(e) {
+            if (e.target === pricingOverlay) {
+                pricingOverlay.style.display = 'none';
+            }
+        });
+    }
+});
 
 // Handle successful login
 function handleSuccessfulLogin(user) {
@@ -57,6 +287,14 @@ function handleSuccessfulLogin(user) {
 
         // Use Discord avatar or fallback
         const avatarUrl = userData.avatar || `https://cdn.discordapp.com/embed/avatars/${Math.floor(Math.random() * 5)}.png`;
+        
+        // Update all avatar elements
+        if (profileAvatar) profileAvatar.src = avatarUrl;
+        if (userAvatar) userAvatar.src = avatarUrl;
+        if (profileUsername) profileUsername.textContent = userData.username;
+        if (userName) userName.textContent = userData.username;
+    }
+}
 
         if (profileAvatar) profileAvatar.src = avatarUrl;
         if (profileUsername) profileUsername.textContent = userData.username || 'User';

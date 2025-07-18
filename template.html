@@ -18,27 +18,107 @@
         <div class="asteroid-field"></div>
     </div>
 
-    <!-- Navigation -->
-    <nav class="navbar">
-        <div class="nav-container">
-            <div class="nav-logo" onclick="window.location.href='index.html'">
+    <!-- User Profile Dropdown -->
+    <div class="user-profile-dropdown" id="user-dropdown" style="position: absolute; top: 20px; right: 20px; z-index: 1001;">
+        <div class="user-trigger" onclick="toggleUserDropdown()">
+            <img src="https://via.placeholder.com/40x40/ffffff/000000?text=U" alt="Profile" id="user-avatar" />
+            <span id="user-name">User</span>
+            <i class="fas fa-chevron-down"></i>
+        </div>
+        <div class="dropdown-menu" id="dropdown-menu">
+            <a href="profile.html" class="dropdown-item">
+                <i class="fas fa-user"></i>
+                Profile
+            </a>
+            <a href="bots.html" class="dropdown-item">
+                <i class="fas fa-robot"></i>
+                My Bots
+            </a>
+            <a href="template.html" class="dropdown-item">
+                <i class="fas fa-code"></i>
+                Templates
+            </a>
+            <div class="dropdown-divider"></div>
+            <a href="#" onclick="authSystem.logout()" class="dropdown-item">
+                <i class="fas fa-sign-out-alt"></i>
+                Logout
+            </a>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
                 <i class="fas fa-rocket"></i>
                 <span>Smart Serve</span>
             </div>
-            <div class="nav-menu">
-                <a href="index.html" class="nav-link">Home</a>
-                <a href="bot-builder.html" class="nav-link">Bots</a>
-                <a href="template.html" class="nav-link active">Templates</a>
-                <a href="coming-soon.html" class="nav-link">Learn</a>
-            </div>
-            <div class="nav-actions">
-                <button class="login-btn" onclick="window.location.href='login.html'">
-                    <i class="fas fa-sign-in-alt"></i>
-                    Login
-                </button>
-            </div>
         </div>
-    </nav>
+
+        <nav class="sidebar-nav">
+            <div class="nav-section">
+                <div class="nav-item" onclick="window.location.href='bot-builder.html'">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Create Bot</span>
+                </div>
+                <div class="nav-item" onclick="window.location.href='bots.html'">
+                    <i class="fas fa-robot"></i>
+                    <span>My Bots</span>
+                </div>
+                <div class="nav-item" onclick="goToDeployments()">
+                    <i class="fas fa-rocket"></i>
+                    <span>Deployments</span>
+                </div>
+                <div class="nav-item" onclick="goToTeams()">
+                    <i class="fas fa-users"></i>
+                    <span>Teams</span>
+                </div>
+            </div>
+
+            <div class="nav-divider"></div>
+
+            <div class="nav-section">
+                <div class="nav-item active">
+                    <i class="fas fa-code"></i>
+                    <span>Template</span>
+                </div>
+                <div class="nav-item">
+                    <i class="fas fa-cog"></i>
+                    <span>Custom</span>
+                </div>
+                <div class="nav-item" onclick="goToLearn()">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>Learn</span>
+                </div>
+                <div class="nav-item" onclick="goToQuests()">
+                    <i class="fas fa-trophy"></i>
+                    <span>Quests</span>
+                </div>
+                <div class="nav-item" onclick="goToMarketplace()">
+                    <i class="fas fa-store"></i>
+                    <span>Marketplace</span>
+                </div>
+            </div>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="usage-section">
+                <div class="usage-header">
+                    <span>Usage</span>
+                    <span class="coming-soon">Coming Soon</span>
+                </div>
+                <div class="usage-bar">
+                    <div class="usage-fill" style="width: 65%"></div>
+                </div>
+                <div class="usage-text">65% of limit used</div>
+            </div>
+
+            <button class="upgrade-btn" onclick="openUpgradeModal()">
+                <i class="fas fa-crown"></i>
+                <span>Upgrade to Core</span>
+            </button>
+        </div>
+    </div>
 
     <!-- Main Content -->
     <main class="main-content">
