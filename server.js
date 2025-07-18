@@ -111,7 +111,7 @@ app.get('/auth/discord/callback', async (req, res) => {
             id: userData.id,
             username: userData.username,
             email: userData.email,
-            avatar: userData.avatar ? `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png` : null,
+            avatar: userData.avatar ? `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png?size=256` : `https://cdn.discordapp.com/embed/avatars/${userData.discriminator % 5}.png`,
             discriminator: userData.discriminator
         };
 
