@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bots Gallery - Smart Serve</title>
+    <link href="bot-builder.css" rel="stylesheet" type="text/css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .bots-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .bot-showcase-card {
+            background: rgba(26, 26, 26, 0.8);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer; /* Add cursor pointer to indicate clickability */
+        }
+
+        .bot-showcase-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #60a5fa, #3b82f6, #1d4ed8);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .bot-showcase-card:hover {
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(255, 255, 255, 0.1);
+        }
+
+        .bot-showcase-card:hover::before {
+            opacity: 1;
+        }
+
+        .bot-creator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .bot-creator img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .bot-creator-info h4 {
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .bot-creator-info span {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .bot-content-preview {
+            background: rgba(42, 42, 42, 0.6);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            border-left: 4px solid #60a5fa;
+        }
+
+        .bot-content-preview p {
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin: 0;
+            font-size: 0.95rem;
+        }
+
+        .bot-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .bot-order-number {
+            background: rgba(96, 165, 250, 0.2);
+            color: #60a5fa;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .bot-date {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+
+        .no-bots {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .no-bots i {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .gallery-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .gallery-stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .stat-box {
+            background: rgba(26, 26, 26, 0.8);
+            padding: 15px 25px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-box .number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--pure-white);
+            display: block;
+        }
+
+        .stat-box .label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Space Background -->
+    <div class="space-background">
+        <div class="stars-layer"></div>
+        <div class="nebula-layer"></div>
+        <div class="galaxy-layer"></div>
+        <div class="asteroid-field"></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo" onclick="window.location.href='index.html'">
+                <i class="fas fa-rocket"></i>
+                <span>Smart Serve</span>
+            </div>
+            <div class="nav-menu">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="bot-builder.html" class="nav-link">Builder</a>
+                <a href="bots.html" class="nav-link" style="color: var(--pure-white);">Bots</a>
+                <a href="template.html" class="nav-link">Templates</a>
+                <a href="coming-soon.html" class="nav-link">Learn</a>
+            </div>
+            <div class="nav-actions">
+                <button class="login-btn" onclick="window.location.href='login.html'">
+                    <i class="fab fa-discord"></i>
+                    Login with Discord
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="fas fa-rocket"></i>
+                <span>Smart Serve</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-section">
+                <div class="nav-item" onclick="window.location.href='index.html'">
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
+                </div>
+                <div class="nav-item" onclick="window.location.href='bot-builder.html'">
+                    <i class="fas fa-robot"></i>
+                    <span>Builder</span>
+                </div>
+                <div class="nav-item active">
+                    <i class="fas fa-th-large"></i>
+                    <span>Bots Gallery</span>
+                </div>
+            </div>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="usage-section">
+                <div class="usage-header">
+                    <span>Gallery</span>
+                    <span class="coming-soon">Live</span>
+                </div>
+                <div class="usage-bar">
+                    <div class="usage-fill" style="width: 100%"></div>
+                </div>
+                <div class="usage-text">Community showcase</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="gallery-header">
+            <h1>🤖 Community Bot Gallery</h1>
+            <p>Discover amazing bots created by our community</p>
+            <div class="gallery-stats">
+                <div class="stat-box">
+                    <span class="number" id="total-bots">0</span>
+                    <span class="label">Total Bots</span>
+                </div>
+                <div class="stat-box">
+                    <span class="number" id="active-creators">0</span>
+                    <span class="label">Active Creators</span>
+                </div>
+                <div class="stat-box">
+                    <span class="number" id="this-month">0</span>
+                    <span class="label">This Month</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="bots-gallery" id="bots-gallery">
+            <!-- Bot cards will be inserted here -->
+        </div>
+
+        <div class="no-bots" id="no-bots" style="display: none;">
+            <i class="fas fa-robot"></i>
+            <h3>No bots in the gallery yet</h3>
+            <p>Be the first to create and share your bot!</p>
+            <button class="btn-make-order" onclick="window.location.href='bot-builder.html'">
+                <i class="fas fa-plus"></i> Create Your Bot
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Load and display public bot orders
+        async function loadPublicBots() {
+            try {
+                const response = await fetch('/api/orders/public');
+                const bots = await response.json();
+
+                displayBots(bots);
+                updateStats(bots);
+
+            } catch (error) {
+                console.error('Failed to load bots:', error);
+                document.getElementById('no-bots').style.display = 'block';
+            }
+        }
+
+        function displayBots(bots) {
+            const gallery = document.getElementById('bots-gallery');
+            const noBots = document.getElementById('no-bots');
+
+            if (bots.length === 0) {
+                noBots.style.display = 'block';
+                return;
+            }
+
+            gallery.innerHTML = '';
+
+            bots.forEach(bot => {
+                const botCard = document.createElement('div');
+                botCard.className = 'bot-showcase-card';
+
+                const truncatedContent = bot.content.length > 150 
+                    ? bot.content.substring(0, 150) + '...' 
+                    : bot.content;
+
+                botCard.innerHTML = `
+                    <div class="bot-creator">
+                        <img src="${bot.userInfo.avatar || 'https://via.placeholder.com/32x32/ffffff/000000?text=U'}" alt="Creator" />
+                        <div class="bot-creator-info">
+                            <h4>${bot.userInfo.username}</h4>
+                            <span>Bot Creator</span>
+                        </div>
+                    </div>
+
+                    <div class="bot-content-preview">
+                        <p>${truncatedContent}</p>
+                    </div>
+
+                    <div class="bot-meta">
+                        <div class="bot-order-number">Order #${bot.orderNumber}</div>
+                        <div class="bot-date">${new Date(bot.createdAt).toLocaleDateString()}</div>
+                    </div>
+                `;
+                botCard.addEventListener('click', function() {
+                    // Check if user is admin (replace with actual admin check)
+                    const isAdmin = localStorage.getItem('isAdmin') === 'true'; // Example: check local storage
+
+                    if (isAdmin) {
+                        // Redirect to coding environment with bot information
+                        const botName = bot.userInfo.username; // Example of passing bot info
+                        window.location.href = `coding-environment.html?bot=${encodeURIComponent(botName)}`;
+                    } else {
+                        alert('Admin access required to view bot code.');
+                    }
+                });
+
+                gallery.appendChild(botCard);
+            });
+        }
+
+        function updateStats(bots) {
+            const totalBots = bots.length;
+            const uniqueCreators = new Set(bots.map(bot => bot.userInfo.username)).size;
+            const thisMonth = bots.filter(bot => {
+                const botDate = new Date(bot.createdAt);
+                const now = new Date();
+                return botDate.getMonth() === now.getMonth() && 
+                       botDate.getFullYear() === now.getFullYear();
+            }).length;
+
+            document.getElementById('total-bots').textContent = totalBots;
+            document.getElementById('active-creators').textContent = uniqueCreators;
+            document.getElementById('this-month').textContent = thisMonth;
+        }
+
+        // Load bots on page load
+        document.addEventListener('DOMContentLoaded', loadPublicBots);
+    </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Bots - Smart Serve</title>
+    <link href="bot-builder.css" rel="stylesheet" type="text/css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="security-styles.css" rel="stylesheet" type="text/css" />
+    <script src="auth.js"></script>
+</head>
+<body>
+    <!-- Animated Space Background -->
+    <div class="space-background">
+        <div class="stars-layer"></div>
+        <div class="nebula-layer"></div>
+        <div class="galaxy-layer"></div>
+        <div class="asteroid-field"></div>
+    </div>
+
+    <!-- Top Header with User Profile -->
+    <header class="top-header">
+        <div class="header-container">
+            <div class="header-logo" onclick="window.location.href='bot-builder.html'">
+                <i class="fas fa-rocket"></i>
+                <span>Smart Serve</span>
+            </div>
+            <div class="header-actions">
+                <div class="user-dropdown" id="user-dropdown">
+                    <div class="user-trigger" onclick="toggleUserDropdown()">
+                        <img src="https://via.placeholder.com/40x40/ffffff/000000?text=U" alt="Profile" id="user-avatar" />
+                        <span id="user-name">User</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="dropdown-menu" id="dropdown-menu">
+                        <a href="profile.html" class="dropdown-item">
+                            <i class="fas fa-user"></i>
+                            Profile
+                        </a>
+                        <a href="bots.html" class="dropdown-item">
+                            <i class="fas fa-robot"></i>
+                            My Bots
+                        </a>
+                        <a href="template.html" class="dropdown-item">
+                            <i class="fas fa-code"></i>
+                            Templates
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a href="#" onclick="authSystem.logout()" class="dropdown-item">
+                            <i class="fas fa-sign-out-alt"></i>
+                            Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="fas fa-rocket"></i>
+                <span>Smart Serve</span>
+            </div>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <div class="nav-section">
+                <div class="nav-item" onclick="window.location.href='bot-builder.html'">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Create Bot</span>
+                </div>
+                <div class="nav-item active">
+                    <i class="fas fa-robot"></i>
+                    <span>My Bots</span>
+                </div>
+                <div class="nav-item" onclick="goToDeployments()">
+                    <i class="fas fa-rocket"></i>
+                    <span>Deployments</span>
+                </div>
+                <div class="nav-item" onclick="goToTeams()">
+                    <i class="fas fa-users"></i>
+                    <span>Teams</span>
+                </div>
+            </div>
+            
+            <div class="nav-divider"></div>
+            
+            <div class="nav-section">
+                <div class="nav-item" onclick="window.location.href='template.html'">
+                    <i class="fas fa-code"></i>
+                    <span>Template</span>
+                </div>
+                <div class="nav-item">
+                    <i class="fas fa-cog"></i>
+                    <span>Custom</span>
+                </div>
+                <div class="nav-item" onclick="goToLearn()">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>Learn</span>
+                </div>
+                <div class="nav-item" onclick="goToQuests()">
+                    <i class="fas fa-trophy"></i>
+                    <span>Quests</span>
+                </div>
+                <div class="nav-item" onclick="goToMarketplace()">
+                    <i class="fas fa-store"></i>
+                    <span>Marketplace</span>
+                </div>
+            </div>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="usage-section">
+                <div class="usage-header">
+                    <span>Usage</span>
+                    <span class="coming-soon">Coming Soon</span>
+                </div>
+                <div class="usage-bar">
+                    <div class="usage-fill" style="width: 65%"></div>
+                </div>
+                <div class="usage-text">65% of limit used</div>
+            </div>
+            
+            <button class="upgrade-btn" onclick="openUpgradeModal()">
+                <i class="fas fa-crown"></i>
+                <span>Upgrade to Core</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="content-header">
+            <h1>My Bots</h1>
+            <p>Manage and deploy your custom bots</p>
+        </div>
+
+        <div class="bots-container">
+            <div class="bots-grid" id="bots-grid">
+                <!-- Bots will be loaded here -->
+            </div>
+
+            <div class="empty-state" id="empty-state" style="display: none;">
+                <div class="empty-icon">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <h3>No bots yet</h3>
+                <p>Create your first bot to get started</p>
+                <button class="btn-primary" onclick="window.location.href='bot-builder.html'">
+                    <i class="fas fa-plus"></i>
+                    Create Your First Bot
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // User dropdown functionality
+        function toggleUserDropdown() {
+            const dropdown = document.getElementById('user-dropdown');
+            dropdown.classList.toggle('active');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('user-dropdown');
+            if (!dropdown.contains(event.target)) {
+                dropdown.classList.remove('active');
+            }
+        });
+
+        // Load user profile data
+        document.addEventListener('DOMContentLoaded', function() {
+            const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+            const userAvatar = document.getElementById('user-avatar');
+            const userName = document.getElementById('user-name');
+
+            if (userData.username) {
+                const avatarUrl = userData.avatar || `https://cdn.discordapp.com/embed/avatars/${Math.floor(Math.random() * 5)}.png`;
+                
+                if (userAvatar) userAvatar.src = avatarUrl;
+                if (userName) userName.textContent = userData.username;
+                
+                loadUserBots();
+            } else {
+                window.location.href = 'login.html';
+            }
+        });
+
+        // Load user's bots
+        async function loadUserBots() {
+            try {
+                const sessionToken = sessionStorage.getItem('serverSessionToken');
+                const response = await fetch('/api/user/orders', {
+                    headers: {
+                        'Authorization': `Bearer ${sessionToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const orders = await response.json();
+                    displayBots(orders);
+                } else {
+                    console.error('Failed to load bots');
+                    showEmptyState();
+                }
+            } catch (error) {
+                console.error('Error loading bots:', error);
+                showEmptyState();
+            }
+        }
+
+        function displayBots(orders) {
+            const botsGrid = document.getElementById('bots-grid');
+            const emptyState = document.getElementById('empty-state');
+
+            if (orders.length === 0) {
+                showEmptyState();
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            
+            botsGrid.innerHTML = orders.map(order => `
+                <div class="bot-card" data-order="${order.order_number}">
+                    <div class="bot-header">
+                        <div class="bot-icon">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="bot-status ${order.status.includes('Completed') ? 'completed' : 'pending'}">
+                            ${order.status}
+                        </div>
+                    </div>
+                    <div class="bot-info">
+                        <h3>Bot Order #${order.order_number}</h3>
+                        <p>${order.content.substring(0, 100)}${order.content.length > 100 ? '...' : ''}</p>
+                        <div class="bot-meta">
+                            <span><i class="fas fa-calendar"></i> ${new Date(order.created_at).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                    <div class="bot-actions">
+                        ${order.status.includes('Completed') ? 
+                            `<button class="btn-secondary" onclick="viewCode('${order.order_number}')">
+                                <i class="fas fa-code"></i> View Code
+                            </button>
+                            <button class="btn-primary" onclick="deployBot('${order.order_number}')">
+                                <i class="fas fa-rocket"></i> Deploy
+                            </button>` :
+                            `<button class="btn-secondary" onclick="cancelOrder('${order.order_number}')">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>`
+                        }
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showEmptyState() {
+            document.getElementById('bots-grid').innerHTML = '';
+            document.getElementById('empty-state').style.display = 'block';
+        }
+
+        function viewCode(orderNumber) {
+            window.location.href = `coding-environment.html?order=${orderNumber}`;
+        }
+
+        function deployBot(orderNumber) {
+            alert(`Deploying bot for order #${orderNumber}... This feature is coming soon!`);
+        }
+
+        async function cancelOrder(orderNumber) {
+            if (confirm('Are you sure you want to cancel this order?')) {
+                try {
+                    const sessionToken = sessionStorage.getItem('serverSessionToken');
+                    const response = await fetch('/api/order/cancel', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${sessionToken}`
+                        },
+                        body: JSON.stringify({ orderNumber })
+                    });
+
+                    if (response.ok) {
+                        loadUserBots(); // Reload the bots list
+                    } else {
+                        alert('Failed to cancel order');
+                    }
+                } catch (error) {
+                    console.error('Error cancelling order:', error);
+                    alert('Error cancelling order');
+                }
+            }
+        }
+
+        // Placeholder functions for sidebar navigation
+        function goToDeployments() { window.location.href = 'coming-soon.html'; }
+        function goToTeams() { window.location.href = 'coming-soon.html'; }
+        function goToLearn() { window.location.href = 'coming-soon.html'; }
+        function goToQuests() { window.location.href = 'coming-soon.html'; }
+        function goToMarketplace() { window.location.href = 'coming-soon.html'; }
+        function openUpgradeModal() { window.location.href = 'upgrade.html'; }
+    </script>
+
+    <style>
+        .bots-container {
+            padding: 20px 0;
+        }
+
+        .bots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .bot-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 24px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .bot-card:hover {
+            transform: translateY(-4px);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(0, 153, 255, 0.3);
+        }
+
+        .bot-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .bot-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #0099ff, #00ff99);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .bot-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .bot-status.completed {
+            background: rgba(0, 255, 153, 0.2);
+            color: #00ff99;
+        }
+
+        .bot-status.pending {
+            background: rgba(255, 153, 0, 0.2);
+            color: #ff9900;
+        }
+
+        .bot-info h3 {
+            color: #fff;
+            margin: 0 0 8px 0;
+            font-size: 1.2rem;
+        }
+
+        .bot-info p {
+            color: #aaa;
+            margin: 0 0 12px 0;
+            line-height: 1.4;
+        }
+
+        .bot-meta {
+            display: flex;
+            gap: 16px;
+            font-size: 0.9rem;
+            color: #888;
+        }
+
+        .bot-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .bot-actions button {
+            flex: 1;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #0099ff, #00ff99);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 153, 255, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: #aaa;
+        }
+
+        .empty-icon {
+            font-size: 4rem;
+            margin-bottom: 24px;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            color: #fff;
+            margin-bottom: 12px;
+        }
+
+        .empty-state .btn-primary {
+            margin-top: 24px;
+            padding: 12px 24px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+    </style>
+</body>
+</html>
