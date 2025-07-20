@@ -58,26 +58,40 @@
 
     <!-- Main Content Area -->
     <div class="main-content">
-        <!-- Left Section - Console -->
-        <div class="console-main-section">
-            <div class="console-main-header">
-                <h3><i class="fas fa-terminal"></i> Console</h3>
+        <!-- Left Section - AI Assistant -->
+        <div class="ai-section">
+            <div class="ai-header">
+                <h3><i class="fas fa-brain"></i> AI Assistant</h3>
             </div>
-            <div class="console-main-content">
-                <div class="coming-soon-console">
-                    <div class="coming-soon-animation">
-                        <div class="gear-container">
-                            <i class="fas fa-cog fa-spin"></i>
-                            <i class="fas fa-cog fa-spin gear-2"></i>
+            <div class="ai-content">
+                <div class="coming-soon-ai">
+                    <div class="ai-animation">
+                        <div class="neural-network">
+                            <div class="node node-1"></div>
+                            <div class="node node-2"></div>
+                            <div class="node node-3"></div>
+                            <div class="connection connection-1"></div>
+                            <div class="connection connection-2"></div>
                         </div>
                     </div>
-                    <h3>Console Coming Soon!</h3>
-                    <p>Interactive console features will be available soon.</p>
-                    <div class="console-preview">
-                        <div class="console-line">$ npm install discord.js</div>
-                        <div class="console-line">$ node bot.js</div>
-                        <div class="console-line">Bot is online!</div>
-                        <div class="console-cursor">|</div>
+                    <h3>Powerful AI Coming Soon!</h3>
+                    <p>Advanced AI assistance for code generation and debugging will be available soon.</p>
+                    <div class="ai-features">
+                        <div class="feature-item">
+                            <i class="fas fa-code"></i>
+                            <span>Smart Code Generation</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fas fa-bug"></i>
+                            <span>Intelligent Debugging</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fas fa-lightbulb"></i>
+                            <span>Code Optimization</span>
+                        </div>
+                    </div>
+                    <div class="disabled-textbox">
+                        <textarea placeholder="AI assistance will be available here..." disabled></textarea>
                     </div>
                 </div>
             </div>
@@ -115,50 +129,25 @@
             </div>
         </div>
 
-        <!-- Right Section - Output & Terminal -->
+        <!-- Right Section - Console -->
         <div class="console-section">
             <div class="console-header">
-                <div class="console-tabs">
-                    <div class="console-tab active" data-console="terminal">
-                        <i class="fas fa-terminal"></i>
-                        Terminal
-                    </div>
-                    <div class="console-tab" data-console="output">
-                        <i class="fas fa-play"></i>
-                        Output
-                    </div>
-                    <div class="console-tab" data-console="problems">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        Problems
-                    </div>
-                </div>
-                <div class="console-actions">
-                    <button class="console-btn" onclick="clearConsole()">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                    <button class="console-btn" onclick="runCode()">
-                        <i class="fas fa-play"></i>
-                    </button>
-                </div>
+                <h3><i class="fas fa-terminal"></i> Console</h3>
             </div>
             <div class="console-content">
-                <div class="console-panel active" data-console="terminal">
-                    <div class="terminal-output" id="terminalOutput">
-                        <div class="terminal-line">
-                            <span class="terminal-prompt">$</span>
-                            <span class="terminal-cursor">|</span>
+                <div class="coming-soon-console">
+                    <div class="console-animation">
+                        <div class="terminal-icon">
+                            <i class="fas fa-terminal"></i>
                         </div>
                     </div>
-                    <input type="text" class="terminal-input" placeholder="Enter command..." />
-                </div>
-                <div class="console-panel" data-console="output">
-                    <div class="output-content" id="outputContent">
-                        <p>Code output will appear here...</p>
-                    </div>
-                </div>
-                <div class="console-panel" data-console="problems">
-                    <div class="problems-content" id="problemsContent">
-                        <p>No problems detected.</p>
+                    <h3>Console Coming Soon!</h3>
+                    <p>Interactive terminal and output console will be available soon.</p>
+                    <div class="console-preview">
+                        <div class="preview-line">$ npm install discord.js</div>
+                        <div class="preview-line">$ node bot.js</div>
+                        <div class="preview-line success">✓ Bot is online!</div>
+                        <div class="preview-cursor">|</div>
                     </div>
                 </div>
             </div>

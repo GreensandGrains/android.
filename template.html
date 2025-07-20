@@ -18,33 +18,46 @@
         <div class="asteroid-field"></div>
     </div>
 
-    <!-- User Profile Dropdown -->
-    <div class="user-profile-dropdown" id="user-dropdown" style="position: absolute; top: 20px; right: 20px; z-index: 1001;">
-        <div class="user-trigger" onclick="toggleUserDropdown()">
-            <img src="https://via.placeholder.com/40x40/ffffff/000000?text=U" alt="Profile" id="user-avatar" />
-            <span id="user-name">User</span>
-            <i class="fas fa-chevron-down"></i>
+    <!-- Header with Profile -->
+    <header class="page-header">
+        <div class="header-content">
+            <div class="header-logo" onclick="window.location.href='index.html'">
+                <i class="fas fa-rocket"></i>
+                <span>Smart Serve</span>
+            </div>
+            <div class="header-profile">
+                <div class="user-dropdown" id="user-dropdown">
+                    <div class="user-trigger" onclick="toggleUserDropdown()">
+                        <img src="https://via.placeholder.com/40x40/ffffff/000000?text=U" alt="Profile" id="user-avatar" />
+                        <div class="user-info">
+                            <span id="user-name">User</span>
+                            <span class="user-role">Developer</span>
+                        </div>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="dropdown-menu" id="dropdown-menu">
+                        <a href="profile.html" class="dropdown-item">
+                            <i class="fas fa-user"></i>
+                            Profile
+                        </a>
+                        <a href="bots.html" class="dropdown-item">
+                            <i class="fas fa-robot"></i>
+                            My Bots
+                        </a>
+                        <a href="template.html" class="dropdown-item">
+                            <i class="fas fa-code"></i>
+                            Templates
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a href="#" onclick="authSystem.logout()" class="dropdown-item">
+                            <i class="fas fa-sign-out-alt"></i>
+                            Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="dropdown-menu" id="dropdown-menu">
-            <a href="profile.html" class="dropdown-item">
-                <i class="fas fa-user"></i>
-                Profile
-            </a>
-            <a href="bots.html" class="dropdown-item">
-                <i class="fas fa-robot"></i>
-                My Bots
-            </a>
-            <a href="template.html" class="dropdown-item">
-                <i class="fas fa-code"></i>
-                Templates
-            </a>
-            <div class="dropdown-divider"></div>
-            <a href="#" onclick="authSystem.logout()" class="dropdown-item">
-                <i class="fas fa-sign-out-alt"></i>
-                Logout
-            </a>
-        </div>
-    </div>
+    </header>
 
     <!-- Sidebar -->
     <div class="sidebar">
@@ -121,7 +134,7 @@
     </div>
 
     <!-- Main Content -->
-    <main class="main-content">
+    <main class="main-content" style="margin-top: 80px; padding-left: 220px;">
         <div class="content-header">
             <h1 data-translate="botTemplates">Bot Templates</h1>
             <p data-translate="templatesDesc">Choose from our collection of pre-built bot templates</p>

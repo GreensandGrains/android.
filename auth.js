@@ -17,6 +17,11 @@ class AuthSystem {
     }
 
     init() {
+        // Don't run auth checks if we're in an iframe
+        if (window.self !== window.top) {
+            return;
+        }
+        
         this.checkPageAccess();
         this.setupSessionTimeout();
         this.addSecurityHeaders();
@@ -26,8 +31,14 @@ class AuthSystem {
     checkPageAccess() {
         const currentPage = window.location.pathname.split('/').pop() || 'index.html';
         
+        // Don't redirect if we're already on the login page
+        if (currentPage === this.loginPage) {
+            return;
+        }
+        
         if (this.protectedPages.includes(currentPage)) {
             if (!this.isAuthenticated()) {
+                console.log('User not authenticated, redirecting to login');
                 this.redirectToLogin();
                 return;
             }
@@ -41,7 +52,11 @@ class AuthSystem {
         
         // If user is logged in and tries to access login page, redirect to dashboard
         if (currentPage === this.loginPage && this.isAuthenticated()) {
-            window.location.href = 'bot-builder.html';
+            try {
+                window.location.replace('bot-builder.html');
+            } catch (error) {
+                window.location.href = 'bot-builder.html';
+            }
         }
     }
 
@@ -78,7 +93,12 @@ class AuthSystem {
                 return false;
             }
 
-            // Check for session tampering
+            // For Discord OAuth users, we trust the server-provided session
+            if (sessionStorage.getItem('serverSessionToken')) {
+                return true;
+            }
+
+            // Check for session tampering for other login methods
             const expectedToken = this.generateSessionToken(userData.id);
             if (sessionToken !== expectedToken) {
                 console.warn('Session token mismatch detected');
@@ -127,6 +147,17 @@ class AuthSystem {
             try {
                 const user = JSON.parse(userData);
                 this.logSecurityEvent('logout', user.id, reason);
+                
+                // Call server logout if we have a server session
+                const serverSessionToken = sessionStorage.getItem('serverSessionToken');
+                if (serverSessionToken) {
+                    fetch('/api/auth/logout', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${serverSessionToken}`
+                        }
+                    }).catch(error => console.error('Server logout error:', error));
+                }
             } catch (error) {
                 console.error('Error logging logout event:', error);
             }
@@ -146,7 +177,14 @@ class AuthSystem {
     redirectToLogin() {
         const currentPage = window.location.pathname + window.location.search;
         sessionStorage.setItem('redirectAfterLogin', currentPage);
-        window.location.href = this.loginPage;
+        
+        // Use replace instead of href to avoid security issues
+        try {
+            window.location.replace(this.loginPage);
+        } catch (error) {
+            // Fallback for iframe or security restrictions
+            window.top.location.href = this.loginPage;
+        }
     }
 
     // Setup automatic session timeout

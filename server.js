@@ -1,4 +1,3 @@
-
 const express = require('express');
 const path = require('path');
 const crypto = require('crypto');
@@ -17,8 +16,8 @@ discordBot.start().catch(console.error);
 
 // Discord OAuth configuration
 const DISCORD_CLIENT_ID = '1372226433191247983';
-const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET || 'qoG6imOne_sV-AZarhBRHo29NbEuzJv4';
-const DISCORD_REDIRECT_URI = `${process.env.REPL_URL || 'https://android-m682.onrender.com'}/auth/discord/callback`;
+const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET || '0GVe7ht4W-R1wMxxkq-mFBC1-CbpnD9E';
+const DISCORD_REDIRECT_URI = `${process.env.REPL_URL || 'http://localhost:5000'}/auth/discord/callback`;
 
 // Store sessions in memory (use Redis/database in production)
 const sessions = new Map();
@@ -50,7 +49,7 @@ app.get('/', (req, res) => {
 app.get('/auth/discord', (req, res) => {
     const state = generateState();
     sessions.set(state, { timestamp: Date.now() });
-    
+
     const params = new URLSearchParams({
         client_id: DISCORD_CLIENT_ID,
         redirect_uri: DISCORD_REDIRECT_URI,
@@ -58,7 +57,7 @@ app.get('/auth/discord', (req, res) => {
         scope: 'identify email',
         state: state
     });
-    
+
     const discordAuthUrl = `https://discord.com/api/oauth2/authorize?${params.toString()}`;
     res.redirect(discordAuthUrl);
 });
@@ -66,11 +65,11 @@ app.get('/auth/discord', (req, res) => {
 // Discord OAuth callback
 app.get('/auth/discord/callback', async (req, res) => {
     const { code, state } = req.query;
-    
+
     if (!code || !state || !sessions.has(state)) {
         return res.redirect('/login.html?error=invalid_request');
     }
-    
+
     try {
         // Exchange code for access token
         const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
@@ -86,25 +85,25 @@ app.get('/auth/discord/callback', async (req, res) => {
                 redirect_uri: DISCORD_REDIRECT_URI,
             }),
         });
-        
+
         const tokenData = await tokenResponse.json();
-        
+
         if (!tokenData.access_token) {
             throw new Error('Failed to get access token');
         }
-        
+
         // Get user information
         const userResponse = await fetch('https://discord.com/api/users/@me', {
             headers: {
                 'Authorization': `Bearer ${tokenData.access_token}`,
             },
         });
-        
+
         const userData = await userResponse.json();
-        
+
         // Clean up state
         sessions.delete(state);
-        
+
         // Create user session
         const sessionId = crypto.randomBytes(32).toString('hex');
         const user = {
@@ -121,12 +120,12 @@ app.get('/auth/discord/callback', async (req, res) => {
         } catch (error) {
             console.error('Error saving user to database:', error);
         }
-        
+
         sessions.set(sessionId, {
             user: user,
             timestamp: Date.now()
         });
-        
+
         // Redirect to success page with session data
         res.send(`
             <!DOCTYPE html>
@@ -163,19 +162,19 @@ app.get('/auth/discord/callback', async (req, res) => {
                     const userData = ${JSON.stringify(user)};
                     userData.role = userData.role || 'free';
                     userData.permissions = userData.permissions || ['view_templates', 'create_basic_bot'];
-                    
+
                     localStorage.setItem('userData', JSON.stringify(userData));
                     localStorage.setItem('loginTimestamp', '${Date.now()}');
-                    
+
                     // Generate client-side compatible session token
                     const secret = 'smart-serve-secret-key';
                     const timestamp = '${Date.now()}';
                     const clientSessionToken = btoa(userData.id + secret + timestamp).slice(0, 32);
                     sessionStorage.setItem('sessionToken', clientSessionToken);
-                    
+
                     // Set server session token for API calls
                     sessionStorage.setItem('serverSessionToken', '${sessionId}');
-                    
+
                     setTimeout(() => {
                         window.location.href = '/bot-builder.html';
                     }, 2000);
@@ -183,7 +182,7 @@ app.get('/auth/discord/callback', async (req, res) => {
             </body>
             </html>
         `);
-        
+
     } catch (error) {
         console.error('Discord OAuth error:', error);
         res.redirect('/login.html?error=auth_failed');
@@ -193,19 +192,19 @@ app.get('/auth/discord/callback', async (req, res) => {
 // API endpoint to check auth status
 app.get('/api/auth/status', (req, res) => {
     const sessionToken = req.headers.authorization?.replace('Bearer ', '');
-    
+
     if (!sessionToken || !sessions.has(sessionToken)) {
         return res.status(401).json({ authenticated: false });
     }
-    
+
     const session = sessions.get(sessionToken);
-    
+
     // Check if session is expired (24 hours)
     if (Date.now() - session.timestamp > 24 * 60 * 60 * 1000) {
         sessions.delete(sessionToken);
         return res.status(401).json({ authenticated: false });
     }
-    
+
     res.json({
         authenticated: true,
         user: session.user
@@ -215,28 +214,28 @@ app.get('/api/auth/status', (req, res) => {
 // Logout endpoint
 app.post('/api/auth/logout', (req, res) => {
     const sessionToken = req.headers.authorization?.replace('Bearer ', '');
-    
+
     if (sessionToken && sessions.has(sessionToken)) {
         sessions.delete(sessionToken);
     }
-    
+
     res.json({ success: true });
 });
 
 // Protected routes middleware
 function requireAuth(req, res, next) {
     const sessionToken = req.headers.authorization?.replace('Bearer ', '');
-    
+
     if (!sessionToken || !sessions.has(sessionToken)) {
         return res.redirect('/login.html');
     }
-    
+
     const session = sessions.get(sessionToken);
     if (Date.now() - session.timestamp > 24 * 60 * 60 * 1000) {
         sessions.delete(sessionToken);
         return res.redirect('/login.html');
     }
-    
+
     req.user = session.user;
     next();
 }
@@ -248,7 +247,7 @@ app.post('/api/order', requireAuth, async (req, res) => {
     try {
         const { content } = req.body;
         const userId = req.user.id; // Discord user ID from session
-        
+
         if (!content || !content.trim()) {
             return res.status(400).json({ error: 'Order content is required' });
         }
@@ -267,13 +266,13 @@ app.post('/api/order', requireAuth, async (req, res) => {
 
         // Process the order through Discord bot
         await discordBot.processOrder(userId, content.trim());
-        
+
         res.json({ 
             success: true, 
             message: 'Order submitted successfully! Check your DMs for confirmation.',
             orderData: orderData
         });
-        
+
     } catch (error) {
         console.error('Order processing error:', error);
         res.status(500).json({ 
@@ -287,9 +286,9 @@ app.get('/api/user/orders', requireAuth, async (req, res) => {
     try {
         const userId = req.user.id;
         const orders = await database.getUserOrders(userId);
-        
+
         res.json(orders);
-        
+
     } catch (error) {
         console.error('Error fetching user orders:', error);
         res.status(500).json({ error: 'Failed to fetch orders' });
@@ -301,18 +300,18 @@ app.post('/api/order/cancel', requireAuth, async (req, res) => {
     try {
         const { orderNumber } = req.body;
         const userId = req.user.id;
-        
+
         const cancelledOrder = await database.cancelOrder(orderNumber, userId);
-        
+
         if (!cancelledOrder) {
             return res.status(404).json({ error: 'Order not found or cannot be cancelled' });
         }
-        
+
         res.json({ 
             success: true, 
             message: 'Order cancelled successfully' 
         });
-        
+
     } catch (error) {
         console.error('Error cancelling order:', error);
         res.status(500).json({ error: 'Failed to cancel order' });
@@ -323,7 +322,7 @@ app.post('/api/order/cancel', requireAuth, async (req, res) => {
 app.get('/api/orders/public', async (req, res) => {
     try {
         const completedOrders = await database.getCompletedOrders();
-        
+
         // Format response to match frontend expectations
         const formattedOrders = completedOrders.map(order => ({
             orderId: order.order_id,
@@ -336,9 +335,9 @@ app.get('/api/orders/public', async (req, res) => {
                 avatar: order.avatar
             }
         }));
-        
+
         res.json(formattedOrders);
-        
+
     } catch (error) {
         console.error('Error fetching public orders:', error);
         res.status(500).json({ error: 'Failed to fetch orders' });
@@ -350,9 +349,9 @@ app.get('/api/user/code', requireAuth, async (req, res) => {
     try {
         const userId = req.user.id;
         const orderNumber = req.query.order;
-        
+
         const codeFiles = await database.getUserCode(userId, orderNumber);
-        
+
         // Convert to object format expected by frontend
         const userCodeObj = {};
         codeFiles.forEach(file => {
@@ -364,9 +363,9 @@ app.get('/api/user/code', requireAuth, async (req, res) => {
                 createdAt: file.created_at
             };
         });
-        
+
         res.json(userCodeObj);
-        
+
     } catch (error) {
         console.error('Error fetching user code:', error);
         res.status(500).json({ error: 'Failed to fetch code files' });
@@ -378,9 +377,9 @@ app.get('/api/order/:orderNumber/code', requireAuth, async (req, res) => {
     try {
         const userId = req.user.id;
         const orderNumber = req.params.orderNumber;
-        
+
         const codeFiles = await database.getUserCode(userId, orderNumber);
-        
+
         // Convert to object format expected by frontend
         const orderCodeObj = {};
         codeFiles.forEach(file => {
@@ -392,9 +391,9 @@ app.get('/api/order/:orderNumber/code', requireAuth, async (req, res) => {
                 createdAt: file.created_at
             };
         });
-        
+
         res.json(orderCodeObj);
-        
+
     } catch (error) {
         console.error('Error fetching order code:', error);
         res.status(500).json({ error: 'Failed to fetch order code files' });
@@ -408,6 +407,79 @@ app.get('/bot-builder.html', (req, res) => {
 
 app.get('/template.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'template.html'));
+});
+
+// API endpoint to get public orders for gallery
+app.get('/api/orders/public', async (req, res) => {
+    try {
+        const completedOrders = await database.getCompletedOrders();
+
+        // Format response to match frontend expectations
+        const formattedOrders = completedOrders.map(order => ({
+            orderId: order.order_id,
+            orderNumber: order.order_number,
+            content: order.content,
+            status: order.status,
+            createdAt: order.created_at,
+            userInfo: {
+                username: order.username,
+                avatar: order.avatar
+            }
+        }));
+
+        res.json(formattedOrders);
+
+    } catch (error) {
+        console.error('Error fetching public orders:', error);
+        res.status(500).json({ error: 'Failed to fetch orders' });
+    }
+});
+
+// Middleware to authenticate the token
+function authenticateToken(req, res, next) {
+    const authHeader = req.headers['authorization']
+    const token = authHeader && authHeader.split(' ')[1]
+
+    if (token == null) return res.sendStatus(401)
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+        if (err) return res.sendStatus(403)
+        req.user = user
+        next()
+    })
+}
+
+// API endpoint to use template and save to user's bots
+app.post('/api/templates/use', requireAuth, async (req, res) => {
+    try {
+        const { templateName, templateType } = req.body;
+        const userId = req.user.id;
+
+        // Generate unique order number for template
+        const orderNumber = 'TPL' + Math.random().toString(36).substr(2, 9).toUpperCase();
+
+        // Create order entry for template
+        const orderData = {
+            orderId: `template_${Date.now()}_${userId}`,
+            orderNumber: orderNumber,
+            userId: userId,
+            content: `${templateName} template - Customizable bot template with pre-built features`,
+            status: '✅ Template Ready'
+        };
+
+        // Store order in database
+        const savedOrder = await database.createOrder(orderData);
+
+        res.json({
+            success: true,
+            orderNumber: orderNumber,
+            message: 'Template added to your bots gallery'
+        });
+
+    } catch (error) {
+        console.error('Error saving template:', error);
+        res.status(500).json({ error: 'Failed to save template' });
+    }
 });
 
 // Start server

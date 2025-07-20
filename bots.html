@@ -233,7 +233,7 @@
     </div>
 
     <!-- Main Content -->
-    <div class="main-content">
+    <div class="main-content" style="margin-top: 80px; padding-left: 220px;">
         <div class="gallery-header">
             <h1>🤖 Community Bot Gallery</h1>
             <p>Discover amazing bots created by our community</p>
@@ -424,7 +424,7 @@
                 <span>Smart Serve</span>
             </div>
         </div>
-        
+
         <nav class="sidebar-nav">
             <div class="nav-section">
                 <div class="nav-item" onclick="window.location.href='bot-builder.html'">
@@ -444,9 +444,9 @@
                     <span>Teams</span>
                 </div>
             </div>
-            
+
             <div class="nav-divider"></div>
-            
+
             <div class="nav-section">
                 <div class="nav-item" onclick="window.location.href='template.html'">
                     <i class="fas fa-code"></i>
@@ -482,7 +482,7 @@
                 </div>
                 <div class="usage-text">65% of limit used</div>
             </div>
-            
+
             <button class="upgrade-btn" onclick="openUpgradeModal()">
                 <i class="fas fa-crown"></i>
                 <span>Upgrade to Core</span>
@@ -491,7 +491,7 @@
     </div>
 
     <!-- Main Content -->
-    <div class="main-content">
+    <div class="main-content" style="margin-top: 80px; padding-left: 220px;">
         <div class="content-header">
             <h1>My Bots</h1>
             <p>Manage and deploy your custom bots</p>
@@ -539,10 +539,10 @@
 
             if (userData.username) {
                 const avatarUrl = userData.avatar || `https://cdn.discordapp.com/embed/avatars/${Math.floor(Math.random() * 5)}.png`;
-                
+
                 if (userAvatar) userAvatar.src = avatarUrl;
                 if (userName) userName.textContent = userData.username;
-                
+
                 loadUserBots();
             } else {
                 window.location.href = 'login.html';
@@ -582,7 +582,7 @@
             }
 
             emptyState.style.display = 'none';
-            
+
             botsGrid.innerHTML = orders.map(order => `
                 <div class="bot-card" data-order="${order.order_number}">
                     <div class="bot-header">

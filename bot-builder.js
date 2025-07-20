@@ -8,7 +8,7 @@ function isMobileDevice() {
 document.addEventListener('DOMContentLoaded', function() {
     // Load user data and update UI
     loadUserData();
-    
+
     // Initialize other components
     initializeOrderForm();
     initializeUserDropdown();
@@ -81,7 +81,7 @@ function loginWithDiscord() {
 // Load user data on page load
 function loadUserData() {
     const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-    
+
     if (!userData.username) {
         // No user data found, redirect to login
         window.location.href = 'login.html';
@@ -95,7 +95,18 @@ function loadUserData() {
     const profileUsername = document.getElementById('profile-username');
     const userProfileSection = document.getElementById('user-profile-section');
 
-    const avatarUrl = userData.avatar || `https://cdn.discordapp.com/embed/avatars/${Math.floor(Math.random() * 5)}.png`;
+    // Construct proper Discord avatar URL
+    let avatarUrl;
+    if (userData.avatar) {
+        // User has a custom avatar
+        avatarUrl = userData.avatar.startsWith('http') 
+            ? userData.avatar 
+            : `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png?size=256`;
+    } else {
+        // Use default Discord avatar based on discriminator or user ID
+        const discriminator = userData.discriminator || (parseInt(userData.id) % 5);
+        avatarUrl = `https://cdn.discordapp.com/embed/avatars/${discriminator % 5}.png`;
+    }
 
     // Update dropdown profile
     if (userAvatar) userAvatar.src = avatarUrl;
@@ -148,7 +159,7 @@ function handleLogout() {
         // Clear all stored data
         localStorage.clear();
         sessionStorage.clear();
-        
+
         // Redirect to login page
         window.location.href = 'login.html';
     }
@@ -157,7 +168,7 @@ function handleLogout() {
 // Handle make order button click
 async function handleMakeOrder() {
     const content = document.getElementById('bot-content').value.trim();
-    
+
     if (!content) {
         alert('Please enter bot content before making an order.');
         return;
@@ -165,7 +176,7 @@ async function handleMakeOrder() {
 
     const makeOrderBtn = document.getElementById('make-order-btn');
     const originalText = makeOrderBtn.innerHTML;
-    
+
     try {
         // Show loading state
         makeOrderBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
@@ -205,28 +216,28 @@ async function handleMakeOrder() {
 }
 
 // Navigation functions for sidebar
-function goToDeployments() {
-    window.location.href = 'coming-soon.html';
+function goToDeployments() { 
+    window.location.href = 'coming-soon.html'; 
 }
 
-function goToTeams() {
-    window.location.href = 'coming-soon.html';
+function goToTeams() { 
+    window.location.href = 'coming-soon.html'; 
 }
 
-function goToLearn() {
-    window.location.href = 'coming-soon.html';
+function goToLearn() { 
+    window.location.href = 'coming-soon.html'; 
 }
 
-function goToQuests() {
-    window.location.href = 'coming-soon.html';
+function goToQuests() { 
+    window.location.href = 'coming-soon.html'; 
 }
 
-function goToMarketplace() {
-    window.location.href = 'coming-soon.html';
+function goToMarketplace() { 
+    window.location.href = 'coming-soon.html'; 
 }
 
-function openUpgradeModal() {
-    window.location.href = 'upgrade.html';
+function openUpgradeModal() { 
+    showPricing(); 
 }
 
 function showPricing() {
@@ -240,13 +251,13 @@ function showPricing() {
 document.addEventListener('DOMContentLoaded', function() {
     const closePricing = document.getElementById('close-pricing');
     const pricingOverlay = document.getElementById('pricing-overlay');
-    
+
     if (closePricing) {
         closePricing.addEventListener('click', function() {
             if (pricingOverlay) pricingOverlay.style.display = 'none';
         });
     }
-    
+
     if (pricingOverlay) {
         pricingOverlay.addEventListener('click', function(e) {
             if (e.target === pricingOverlay) {
@@ -285,14 +296,23 @@ function handleSuccessfulLogin(user) {
     if (profileSection && userData) {
         profileSection.style.display = 'flex';
 
-        // Use Discord avatar or fallback
-        const avatarUrl = userData.avatar || `https://cdn.discordapp.com/embed/avatars/${Math.floor(Math.random() * 5)}.png`;
-        
-        // Update all avatar elements
+        // Construct proper Discord avatar URL
+        let avatarUrl;
+        if (userData.avatar) {
+            // User has a custom avatar
+            avatarUrl = userData.avatar.startsWith('http') 
+                ? userData.avatar 
+                : `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png?size=256`;
+        } else {
+            // Use default Discord avatar based on discriminator or user ID
+            const discriminator = userData.discriminator || (parseInt(userData.id) % 5);
+            avatarUrl = `https://cdn.discordapp.com/embed/avatars/${discriminator % 5}.png`;
+        }
+
         if (profileAvatar) profileAvatar.src = avatarUrl;
+        if (profileUsername) profileUsername.textContent = userData.username || 'User';
         if (userAvatar) userAvatar.src = avatarUrl;
-        if (profileUsername) profileUsername.textContent = userData.username;
-        if (userName) userName.textContent = userData.username;
+        if (userName) userName.textContent = userData.username || 'User';
     }
 }
 
@@ -1003,7 +1023,7 @@ style.textContent = `
         border: 2px solid rgba(255, 255, 255, 0.2);
         border-radius: 8px;
         background: rgba(42, 42, 42, 0.8);
-        color: var(--text-primary);
+color: var(--text-primary);
         font-family: inherit;
         font-size: 1rem;
         transition: all 0.3s ease;
