@@ -21,6 +21,12 @@ class AuthSystem {
         if (window.self !== window.top) {
             return;
         }
+        // Don't run auth checks during OAuth callback
+        if (sessionStorage.getItem('authComplete') === 'true') {
+            sessionStorage.removeItem('authComplete');
+            return;
+        }
+        
         
         this.checkPageAccess();
         this.setupSessionTimeout();
@@ -62,24 +68,48 @@ class AuthSystem {
 
     // Check if user is authenticated
     isAuthenticated() {
-        const userData = localStorage.getItem('userData');
-        const sessionToken = sessionStorage.getItem('sessionToken');
-        const loginTimestamp = localStorage.getItem('loginTimestamp');
-        
-        if (!userData || !sessionToken || !loginTimestamp) {
+                try {
+            const userData = localStorage.getItem('userData');
+            const sessionToken = sessionStorage.getItem('sessionToken');
+            const loginTimestamp = localStorage.getItem('loginTimestamp');
+            
+            console.log('Auth check:', { 
+                hasUserData: !!userData, 
+                hasSessionToken: !!sessionToken, 
+                hasLoginTimestamp: !!loginTimestamp 
+            });
+            
+            if (!userData || !sessionToken || !loginTimestamp) {
+                console.log('Missing auth data');
+                return false;
+            }
+
+            // Parse and validate user data
+            const user = JSON.parse(userData);
+            if (!user.id || !user.username) {
+                console.log('Invalid user data structure');
+                return false;
+            }
+
+            // Check if session is still valid (24 hours)
+            const sessionAge = Date.now() - parseInt(loginTimestamp);
+            const sessionTimeout = 24 * 60 * 60 * 1000; // 24 hours
+            
+            if (sessionAge > sessionTimeout) {
+                console.log('Session expired');
+                this.logout('Session expired');
+                return false;
+            }
+
+            console.log('User authenticated successfully');
+            return true;
+        } catch (error) {
+            console.error('Authentication check error:', error);
+            // Clear corrupted data
+            localStorage.removeItem('userData');
+            sessionStorage.clear();
             return false;
         }
-
-        // Check if session is still valid (24 hours)
-        const sessionAge = Date.now() - parseInt(loginTimestamp);
-        const sessionTimeout = 24 * 60 * 60 * 1000; // 24 hours
-        
-        if (sessionAge > sessionTimeout) {
-            this.logout('Session expired');
-            return false;
-        }
-
-        return true;
     }
 
     // Validate session integrity
@@ -370,9 +400,14 @@ class AuthSystem {
     }
 }
 
-// Initialize authentication system
-const authSystem = new AuthSystem();
+// Initialize authentication system after DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Small delay to ensure all scripts are loaded
+    setTimeout(() => {
+        const authSystem = new AuthSystem();
+        window.authSystem = authSystem;
+    }, 100);
+});
 
-// Export for use in other files
-window.authSystem = authSystem;
+// AuthSystem will be exported in the DOMContentLoaded handler above
 
