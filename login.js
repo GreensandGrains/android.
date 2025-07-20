@@ -22,16 +22,12 @@ function togglePassword() {
 
 // Handle Discord login
 function handleDiscordLogin() {
-    const discordBtn = document.querySelector('.discord-btn');
-    discordBtn.style.opacity = '0.7';
-    discordBtn.style.pointerEvents = 'none';
-
-    // Simulate Discord OAuth flow
+    showLoadingState('Redirecting to Discord...');
+    
+    // Redirect to server-side Discord OAuth endpoint
     setTimeout(() => {
-        alert('Discord login integration would be implemented here with Discord OAuth 2.0');
-        discordBtn.style.opacity = '1';
-        discordBtn.style.pointerEvents = 'auto';
-    }, 1500);
+        window.location.href = '/auth/discord';
+    }, 1000);
 }
 
 // Handle Smars login
