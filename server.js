@@ -82,11 +82,11 @@ app.get('/auth/discord/callback', async (req, res) => {
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
             body: new URLSearchParams({
-                client_id: '1382392124619886652',
-                client_secret: '0GVe7ht4W-R1wMxxkq-mFBC1-CbpnD9E',
+                client_id: DISCORD_CLIENT_ID,
+                client_secret: DISCORD_CLIENT_SECRET,
                 grant_type: 'authorization_code',
                 code: code,
-                redirect_uri: 'https://smart-serve-discord-bot--40493350.repl.co/auth/discord/callback',
+                redirect_uri: DISCORD_REDIRECT_URI,
             }),
         });
 
