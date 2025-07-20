@@ -163,6 +163,8 @@ app.get('/auth/discord/callback', async (req, res) => {
                     userData.role = userData.role || 'free';
                     userData.permissions = userData.permissions || ['view_templates', 'create_basic_bot'];
 
+                   // Set authentication data immediately
+
                     localStorage.setItem('userData', JSON.stringify(userData));
                     localStorage.setItem('loginTimestamp', '${Date.now()}');
 
@@ -175,9 +177,11 @@ app.get('/auth/discord/callback', async (req, res) => {
                     // Set server session token for API calls
                     sessionStorage.setItem('serverSessionToken', '${sessionId}');
 
-                    setTimeout(() => {
-                        window.location.href = '/bot-builder.html';
-                    }, 2000);
+                    // Mark authentication as complete to prevent auth.js from interfering
+                    sessionStorage.setItem('authComplete', 'true');
+
+                    // Immediate redirect without delay
+                    window.location.replace('bot-builder.html');
                 </script>
             </body>
             </html>
