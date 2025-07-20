@@ -64,9 +64,19 @@ app.get('/auth/discord', (req, res) => {
 
 // Discord OAuth callback
 app.get('/auth/discord/callback', async (req, res) => {
-    const { code, state } = req.query;
+    const { code, state, error } = req.query;
+
+    console.log('Discord callback received:', { code: !!code, state: !!state, error });
+
+    // Check for Discord OAuth errors
+    if (error) {
+        console.error('Discord OAuth error:', error);
+        return res.redirect(`/login.html?error=discord_${error}`);
+    }
+
 
     if (!code || !state || !sessions.has(state)) {
+        console.error('Invalid callback parameters:', { code: !!code, state: !!state, hasState: sessions.has(state) });
         return res.redirect('/login.html?error=invalid_request');
     }
 
