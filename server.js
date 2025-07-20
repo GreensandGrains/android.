@@ -105,7 +105,7 @@ app.get('/auth/discord/callback', async (req, res) => {
         // Get user information
         const userResponse = await fetch('https://discord.com/api/users/@me', {
             headers: {
-                'Authorization': `Bearer ${tokenData.access_token}`,
+                'Authorization': `MTM3MjIyNjQzMzE5MTI0Nzk4Mw.GN2UGo.MKRZXArsCQMzwGhvHS5Ih44-RefuXicspOzcGk`,
             },
         });
 
