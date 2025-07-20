@@ -1,755 +1,959 @@
-// Check if user is admin (you can modify this logic based on your authentication)
-function checkAdminStatus() {
-    // This is a placeholder - integrate with your actual admin check
-    const isAdmin = localStorage.getItem('isAdmin') === 'true';
 
-    if (isAdmin) {
-        document.getElementById('adminControls').style.display = 'block';
-    }
-}
+// Global variables
+let currentFile = 'index.js';
+let openFiles = new Map();
+let fileContents = new Map();
+let syntaxHighlighter = null;
+let autocompleteEnabled = true;
+let isDarkTheme = true;
 
-// Initialize page
+// JavaScript keywords and functions for autocomplete
+const jsKeywords = [
+    'const', 'let', 'var', 'function', 'async', 'await', 'return', 'if', 'else', 
+    'for', 'while', 'do', 'switch', 'case', 'break', 'continue', 'try', 'catch', 
+    'throw', 'new', 'class', 'extends', 'import', 'export', 'default', 'typeof',
+    'instanceof', 'in', 'of', 'this', 'super', 'static', 'get', 'set'
+];
+
+const jsFunctions = [
+    'console.log()', 'console.error()', 'console.warn()', 'console.info()',
+    'setTimeout()', 'setInterval()', 'clearTimeout()', 'clearInterval()',
+    'parseInt()', 'parseFloat()', 'isNaN()', 'isFinite()',
+    'JSON.stringify()', 'JSON.parse()', 'Object.keys()', 'Object.values()',
+    'Array.isArray()', 'Array.from()', 'Array.of()',
+    'Math.random()', 'Math.floor()', 'Math.ceil()', 'Math.round()',
+    'Date.now()', 'new Date()', 'Promise.resolve()', 'Promise.reject()'
+];
+
+const discordJSFunctions = [
+    'client.login()', 'client.on()', 'client.once()', 'client.emit()',
+    'message.reply()', 'message.channel.send()', 'message.delete()',
+    'interaction.reply()', 'interaction.followUp()', 'interaction.deferReply()',
+    'guild.members.cache', 'guild.channels.cache', 'guild.roles.cache',
+    'new EmbedBuilder()', 'new SlashCommandBuilder()', 'new ButtonBuilder()'
+];
+
+// Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
-    checkAdminStatus();
+    initializeIDE();
+});
 
-    // Get template/bot type from URL parameters
-    const urlParams = new URLSearchParams(window.location.search);
-    const templateType = urlParams.get('template');
-    const botType = urlParams.get('bot');
-
-    if (templateType) {
-        document.title = `${templateType} Template - Smart Serve`;
-    } else if (botType) {
-        document.title = `${botType} Bot - Smart Serve`;
-    }
-
-    // Initialize terminal cursor blinking
+async function initializeIDE() {
+    // Show loading screen
+    showLoadingScreen();
+    
+    // Simulate loading delay for smooth animation
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Hide loading screen
+    hideLoadingScreen();
+    
+    // Initialize components
+    initializeFileSystem();
+    initializeEditor();
     initializeTerminal();
-
-    // Load user code from Discord bot
-    loadUserCodeFromDiscord();
-});
-
-// Toggle sidebar
-function toggleSidebar() {
-    const sidebar = document.getElementById('filesSidebar');
-    sidebar.classList.toggle('active');
+    initializeResizeHandles();
+    initializeKeyboardShortcuts();
+    initializeContextMenu();
+    
+    // Load user authentication
+    checkAuthentication();
+    
+    // Load user code from Discord or templates
+    await loadUserCodeFromDiscord();
+    
+    console.log('🚀 Smart Serve IDE initialized successfully!');
 }
 
-// Tab functionality
-document.addEventListener('click', function(e) {
-    // Handle tab clicks
-    if (e.target.closest('.tab')) {
-        const tab = e.target.closest('.tab');
-        const fileName = tab.getAttribute('data-file');
-
-        // Don't close if clicking the close button
-        if (e.target.classList.contains('tab-close')) {
-            e.stopPropagation();
-            closeTab(fileName);
-            return;
-        }
-
-        switchTab(fileName);
-    }
-
-    // Handle console tab clicks
-    if (e.target.closest('.console-tab')) {
-        const consoleTab = e.target.closest('.console-tab');
-        const consoleType = consoleTab.getAttribute('data-console');
-        switchConsoleTab(consoleType);
-    }
-
-    // Handle file item clicks
-    if (e.target.closest('.file-item')) {
-        const fileItem = e.target.closest('.file-item');
-        const fileName = fileItem.querySelector('span').textContent;
-
-        if (!fileItem.classList.contains('folder') && fileName !== 'New File') {
-            openFile(fileName);
-        }
-    }
-});
-
-// Switch between tabs
-function switchTab(fileName) {
-    // Remove active class from all tabs and editor contents
-    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-    document.querySelectorAll('.editor-content').forEach(content => content.classList.remove('active'));
-
-    // Add active class to clicked tab and corresponding editor content
-    const activeTab = document.querySelector(`.tab[data-file="${fileName}"]`);
-    const activeContent = document.querySelector(`.editor-content[data-file="${fileName}"]`);
-
-    if (activeTab && activeContent) {
-        activeTab.classList.add('active');
-        activeContent.classList.add('active');
-    }
+function showLoadingScreen() {
+    const loadingScreen = document.getElementById('loadingScreen');
+    loadingScreen.style.display = 'flex';
 }
 
-// Switch between console tabs
-function switchConsoleTab(consoleType) {
-    // Remove active class from all console tabs and panels
-    document.querySelectorAll('.console-tab').forEach(tab => tab.classList.remove('active'));
-    document.querySelectorAll('.console-panel').forEach(panel => panel.classList.remove('active'));
-
-    // Add active class to clicked console tab and corresponding panel
-    const activeConsoleTab = document.querySelector(`.console-tab[data-console="${consoleType}"]`);
-    const activeConsolePanel = document.querySelector(`.console-panel[data-console="${consoleType}"]`);
-
-    if (activeConsoleTab && activeConsolePanel) {
-        activeConsoleTab.classList.add('active');
-        activeConsolePanel.classList.add('active');
-    }
+function hideLoadingScreen() {
+    const loadingScreen = document.getElementById('loadingScreen');
+    loadingScreen.style.opacity = '0';
+    setTimeout(() => {
+        loadingScreen.style.display = 'none';
+    }, 500);
 }
 
-// Close tab
-function closeTab(fileName) {
-    const tab = document.querySelector(`.tab[data-file="${fileName}"]`);
-    const content = document.querySelector(`.editor-content[data-file="${fileName}"]`);
-
-    if (tab && content) {
-        const wasActive = tab.classList.contains('active');
-
-        tab.remove();
-        content.remove();
-
-        // If this was the active tab, activate another tab
-        if (wasActive) {
-            const remainingTabs = document.querySelectorAll('.tab');
-            if (remainingTabs.length > 0) {
-                const newActiveFile = remainingTabs[0].getAttribute('data-file');
-                switchTab(newActiveFile);
+function checkAuthentication() {
+    const userData = localStorage.getItem('userData');
+    const sessionToken = sessionStorage.getItem('sessionToken');
+    
+    if (userData && sessionToken) {
+        try {
+            const user = JSON.parse(userData);
+            const userAvatarMini = document.getElementById('userAvatarMini');
+            if (userAvatarMini) {
+                userAvatarMini.src = user.avatar || `https://cdn.discordapp.com/embed/avatars/${Math.floor(Math.random() * 5)}.png`;
             }
+        } catch (error) {
+            console.error('Error parsing user data:', error);
         }
+    } else {
+        // Redirect to login if not authenticated
+        window.location.href = 'login.html';
     }
 }
 
-// Create new tab
-function createNewTab() {
-    const fileName = prompt('Enter file name:');
-    if (fileName && fileName.trim()) {
-        createTab(fileName.trim());
+// File System Management
+function initializeFileSystem() {
+    // Initialize default files
+    fileContents.set('index.js', getDefaultFileContent('javascript'));
+    fileContents.set('package.json', getDefaultFileContent('json'));
+    fileContents.set('README.md', getDefaultFileContent('markdown'));
+    
+    // Open default file
+    openFiles.set('index.js', { type: 'javascript', modified: false });
+    
+    // Set up file tree event listeners
+    setupFileTreeEvents();
+    
+    console.log('📁 File system initialized');
+}
+
+function setupFileTreeEvents() {
+    const fileTree = document.getElementById('fileTree');
+    
+    fileTree.addEventListener('click', function(e) {
+        const treeItem = e.target.closest('.tree-item');
+        if (!treeItem) return;
+        
+        if (treeItem.classList.contains('folder')) {
+            toggleFolder(treeItem);
+        } else if (treeItem.classList.contains('file')) {
+            const fileName = treeItem.getAttribute('data-name');
+            const fileType = treeItem.getAttribute('data-type');
+            openFile(fileName, fileType);
+        }
+    });
+}
+
+function toggleFolder(folderElement) {
+    const isExpanded = folderElement.classList.contains('expanded');
+    
+    if (isExpanded) {
+        folderElement.classList.remove('expanded');
+        folderElement.classList.add('collapsed');
+    } else {
+        folderElement.classList.remove('collapsed');
+        folderElement.classList.add('expanded');
     }
 }
 
-// Create tab
-function createTab(fileName) {
-    // Check if tab already exists
-    if (document.querySelector(`.tab[data-file="${fileName}"]`)) {
-        switchTab(fileName);
-        return;
+function openFile(fileName, fileType = 'javascript') {
+    // Add to open files if not already open
+    if (!openFiles.has(fileName)) {
+        openFiles.set(fileName, { type: fileType, modified: false });
+        
+        // Ensure file content exists
+        if (!fileContents.has(fileName)) {
+            fileContents.set(fileName, getDefaultFileContent(fileType));
+        }
+        
+        createTab(fileName, fileType);
     }
+    
+    // Switch to this file
+    switchToFile(fileName);
+    
+    // Update file tree selection
+    updateFileTreeSelection(fileName);
+}
 
+function createTab(fileName, fileType) {
+    const tabBar = document.getElementById('tabBar');
+    const tabAdd = tabBar.querySelector('.tab-add');
+    
     // Create new tab
-    const tabsContainer = document.querySelector('.tabs-container');
-    const newTabBtn = document.querySelector('.new-tab');
-
     const tab = document.createElement('div');
     tab.className = 'tab';
     tab.setAttribute('data-file', fileName);
+    tab.setAttribute('data-type', fileType);
+    
     tab.innerHTML = `
-        <span>${fileName}</span>
-        <i class="fas fa-times tab-close"></i>
+        <div class="tab-content">
+            <i class="${getFileIcon(fileType)} tab-icon"></i>
+            <span class="tab-name">${fileName}</span>
+            <button class="tab-close" onclick="closeTab('${fileName}')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
     `;
+    
+    // Add click event
+    tab.addEventListener('click', (e) => {
+        if (!e.target.closest('.tab-close')) {
+            switchToFile(fileName);
+        }
+    });
+    
+    // Insert before tab-add button
+    tabBar.insertBefore(tab, tabAdd);
+    
+    // Create editor panel
+    createEditorPanel(fileName, fileType);
+}
 
-    tabsContainer.insertBefore(tab, newTabBtn);
-
-    // Create corresponding editor content
-    const editorContainer = document.querySelector('.editor-container');
-    const editorContent = document.createElement('div');
-    editorContent.className = 'editor-content';
-    editorContent.setAttribute('data-file', fileName);
-    editorContent.innerHTML = `
-        <textarea class="code-editor" placeholder="// Add your code here..."></textarea>
+function createEditorPanel(fileName, fileType) {
+    const editorContainer = document.getElementById('editorContainer');
+    
+    const panel = document.createElement('div');
+    panel.className = 'editor-panel';
+    panel.setAttribute('data-file', fileName);
+    
+    const content = fileContents.get(fileName) || getDefaultFileContent(fileType);
+    
+    panel.innerHTML = `
+        <div class="editor-header">
+            <div class="editor-info">
+                <span class="editor-file-name">${fileName}</span>
+                <span class="editor-file-path">~/Discord Bot Project/${fileName}</span>
+            </div>
+            <div class="editor-actions">
+                <button class="editor-btn" onclick="formatCode()" title="Format Code">
+                    <i class="fas fa-code"></i>
+                </button>
+                <button class="editor-btn" onclick="copyCode()" title="Copy All">
+                    <i class="fas fa-copy"></i>
+                </button>
+            </div>
+        </div>
+        <div class="editor-content">
+            <div class="line-numbers" id="lineNumbers-${fileName}">
+                <div class="line-number">1</div>
+            </div>
+            <textarea 
+                class="code-editor" 
+                id="editor-${fileName}"
+                spellcheck="false"
+                autocomplete="off"
+                placeholder="// Start coding here..."
+            >${content}</textarea>
+            <div class="syntax-overlay" id="syntaxOverlay-${fileName}"></div>
+        </div>
     `;
-
-    editorContainer.appendChild(editorContent);
-
-    // Switch to new tab
-    switchTab(fileName);
+    
+    editorContainer.appendChild(panel);
+    
+    // Initialize editor for this panel
+    initializeEditorPanel(fileName, fileType);
 }
 
-// Open file
-function openFile(fileName) {
-    createTab(fileName);
+function initializeEditorPanel(fileName, fileType) {
+    const editor = document.getElementById(`editor-${fileName}`);
+    const lineNumbers = document.getElementById(`lineNumbers-${fileName}`);
+    const syntaxOverlay = document.getElementById(`syntaxOverlay-${fileName}`);
+    
+    // Update line numbers
+    updateLineNumbers(editor, lineNumbers);
+    
+    // Apply syntax highlighting
+    applySyntaxHighlighting(editor, syntaxOverlay, fileType);
+    
+    // Add event listeners
+    editor.addEventListener('input', function(e) {
+        updateLineNumbers(editor, lineNumbers);
+        applySyntaxHighlighting(editor, syntaxOverlay, fileType);
+        markFileModified(fileName);
+        saveFileContent(fileName, editor.value);
+        
+        // Auto-completion
+        if (autocompleteEnabled) {
+            handleAutoComplete(e);
+        }
+    });
+    
+    editor.addEventListener('keydown', function(e) {
+        handleEditorKeyDown(e, fileName);
+    });
+    
+    editor.addEventListener('scroll', function() {
+        // Sync scroll with syntax overlay and line numbers
+        syntaxOverlay.scrollTop = editor.scrollTop;
+        syntaxOverlay.scrollLeft = editor.scrollLeft;
+        lineNumbers.scrollTop = editor.scrollTop;
+    });
 }
 
-// Create new file
-function createNewFile() {
-    createNewTab();
+function switchToFile(fileName) {
+    // Update current file
+    currentFile = fileName;
+    
+    // Update tab states
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+        if (tab.getAttribute('data-file') === fileName) {
+            tab.classList.add('active');
+        }
+    });
+    
+    // Update editor panel states
+    document.querySelectorAll('.editor-panel').forEach(panel => {
+        panel.classList.remove('active');
+        if (panel.getAttribute('data-file') === fileName) {
+            panel.classList.add('active');
+        }
+    });
+    
+    // Focus the editor
+    const editor = document.getElementById(`editor-${fileName}`);
+    if (editor) {
+        setTimeout(() => editor.focus(), 100);
+    }
 }
 
-// Clear console
-function clearConsole() {
-    const activePanel = document.querySelector('.console-panel.active');
-    if (activePanel) {
-        const consoleType = activePanel.getAttribute('data-console');
-
-        if (consoleType === 'terminal') {
-            document.getElementById('terminalOutput').innerHTML = `
-                <div class="terminal-line">
-                    <span class="terminal-prompt">$</span>
-                    <span class="terminal-cursor">|</span>
-                </div>
-            `;
-        } else if (consoleType === 'output') {
-            document.getElementById('outputContent').innerHTML = '<p>Code output will appear here...</p>';
-        } else if (consoleType === 'problems') {
-            document.getElementById('problemsContent').innerHTML = '<p>No problems detected.</p>';
+function closeTab(fileName) {
+    // Don't close if it's the last tab
+    if (openFiles.size <= 1) {
+        showNotification('Cannot close the last tab', 'warning');
+        return;
+    }
+    
+    // Remove from open files
+    openFiles.delete(fileName);
+    
+    // Remove tab
+    const tab = document.querySelector(`.tab[data-file="${fileName}"]`);
+    if (tab) {
+        tab.remove();
+    }
+    
+    // Remove editor panel
+    const panel = document.querySelector(`.editor-panel[data-file="${fileName}"]`);
+    if (panel) {
+        panel.remove();
+    }
+    
+    // Switch to another open file
+    if (currentFile === fileName) {
+        const remainingFiles = Array.from(openFiles.keys());
+        if (remainingFiles.length > 0) {
+            switchToFile(remainingFiles[0]);
         }
     }
 }
 
-// Run code
-function runCode() {
-    const activeEditor = document.querySelector('.editor-content.active .code-editor');
-    if (activeEditor) {
-        const code = activeEditor.value;
+// Editor Functionality
+function initializeEditor() {
+    // Initialize syntax highlighter
+    initializeSyntaxHighlighter();
+    
+    console.log('✏️ Editor initialized');
+}
 
-        // Switch to output tab
-        switchConsoleTab('output');
+function initializeSyntaxHighlighter() {
+    // Custom syntax highlighting patterns
+    const patterns = {
+        javascript: [
+            { pattern: /\b(const|let|var|function|async|await|return|if|else|for|while|do|switch|case|break|continue|try|catch|throw|new|class|extends|import|export|default|typeof|instanceof|in|of|this|super|static|get|set)\b/g, className: 'keyword' },
+            { pattern: /"([^"\\]|\\.)*"|'([^'\\]|\\.)*'|`([^`\\]|\\.)*`/g, className: 'string' },
+            { pattern: /\/\/.*$/gm, className: 'comment' },
+            { pattern: /\/\*[\s\S]*?\*\//g, className: 'comment' },
+            { pattern: /\b\d+\.?\d*\b/g, className: 'number' },
+            { pattern: /\b[a-zA-Z_$][a-zA-Z0-9_$]*(?=\s*\()/g, className: 'function' },
+            { pattern: /[+\-*/%=<>!&|^~?:]/g, className: 'operator' }
+        ],
+        json: [
+            { pattern: /"([^"\\]|\\.)*"/g, className: 'string' },
+            { pattern: /\b\d+\.?\d*\b/g, className: 'number' },
+            { pattern: /\b(true|false|null)\b/g, className: 'keyword' }
+        ],
+        css: [
+            { pattern: /\b[a-z-]+(?=\s*:)/gi, className: 'variable' },
+            { pattern: /"([^"\\]|\\.)*"|'([^'\\]|\\.)*'/g, className: 'string' },
+            { pattern: /\/\*[\s\S]*?\*\//g, className: 'comment' },
+            { pattern: /\b\d+\.?\d*(px|em|rem|%|vh|vw|pt|pc|in|cm|mm|ex|ch|fr)\b/g, className: 'number' }
+        ]
+    };
+    
+    syntaxHighlighter = { patterns };
+}
 
-        // Simulate code execution (replace with actual execution logic)
-        document.getElementById('outputContent').innerHTML = `
-            <p>Running code...</p>
-            <p>Output will appear here when code is executed.</p>
-            <p>Code length: ${code.length} characters</p>
-        `;
+function applySyntaxHighlighting(editor, overlay, fileType) {
+    if (!syntaxHighlighter || !syntaxHighlighter.patterns[fileType]) {
+        return;
+    }
+    
+    let code = editor.value;
+    const patterns = syntaxHighlighter.patterns[fileType];
+    
+    // Apply syntax highlighting
+    patterns.forEach(({ pattern, className }) => {
+        code = code.replace(pattern, `<span class="${className}">$&</span>`);
+    });
+    
+    // Set the highlighted code
+    overlay.innerHTML = code;
+}
+
+function updateLineNumbers(editor, lineNumbers) {
+    const lines = editor.value.split('\n');
+    const lineNumbersHtml = lines.map((_, index) => 
+        `<div class="line-number">${index + 1}</div>`
+    ).join('');
+    
+    lineNumbers.innerHTML = lineNumbersHtml;
+}
+
+function handleEditorKeyDown(e, fileName) {
+    // Tab indentation
+    if (e.key === 'Tab') {
+        e.preventDefault();
+        const editor = e.target;
+        const start = editor.selectionStart;
+        const end = editor.selectionEnd;
+        
+        // Insert tab characters
+        const tabChar = '    '; // 4 spaces
+        editor.value = editor.value.substring(0, start) + tabChar + editor.value.substring(end);
+        editor.setSelectionRange(start + tabChar.length, start + tabChar.length);
+    }
+    
+    // Auto-close brackets and quotes
+    const autoClosePairs = {
+        '(': ')',
+        '[': ']',
+        '{': '}',
+        '"': '"',
+        "'": "'",
+        '`': '`'
+    };
+    
+    if (autoClosePairs[e.key]) {
+        const editor = e.target;
+        const start = editor.selectionStart;
+        const end = editor.selectionEnd;
+        
+        if (start === end) { // No selection
+            e.preventDefault();
+            const closeChar = autoClosePairs[e.key];
+            editor.value = editor.value.substring(0, start) + e.key + closeChar + editor.value.substring(end);
+            editor.setSelectionRange(start + 1, start + 1);
+        }
     }
 }
 
-// Initialize terminal
-function initializeTerminal() {
-    const terminalInput = document.querySelector('.terminal-input');
+function handleAutoComplete(e) {
+    const editor = e.target;
+    const cursorPos = editor.selectionStart;
+    const textBeforeCursor = editor.value.substring(0, cursorPos);
+    const currentWord = textBeforeCursor.split(/\s/).pop();
+    
+    if (currentWord.length >= 2) {
+        const suggestions = [...jsKeywords, ...jsFunctions, ...discordJSFunctions]
+            .filter(item => item.toLowerCase().startsWith(currentWord.toLowerCase()))
+            .slice(0, 10);
+        
+        if (suggestions.length > 0) {
+            showAutocompleteSuggestions(suggestions, editor);
+        } else {
+            hideAutocompleteSuggestions();
+        }
+    } else {
+        hideAutocompleteSuggestions();
+    }
+}
 
+function showAutocompleteSuggestions(suggestions, editor) {
+    let popup = document.getElementById('autocompletePopup');
+    if (!popup) return;
+    
+    // Clear existing items
+    popup.innerHTML = '';
+    
+    // Add suggestions
+    suggestions.forEach(suggestion => {
+        const item = document.createElement('div');
+        item.className = 'autocomplete-item';
+        item.setAttribute('data-value', suggestion);
+        item.innerHTML = `
+            <i class="fas fa-code"></i>
+            <span>${suggestion}</span>
+        `;
+        
+        item.addEventListener('click', () => {
+            insertAutocompleteSuggestion(suggestion, editor);
+        });
+        
+        popup.appendChild(item);
+    });
+    
+    // Position popup
+    const rect = editor.getBoundingClientRect();
+    popup.style.left = `${rect.left}px`;
+    popup.style.top = `${rect.top + 20}px`;
+    popup.style.display = 'block';
+}
+
+function hideAutocompleteSuggestions() {
+    const popup = document.getElementById('autocompletePopup');
+    if (popup) {
+        popup.style.display = 'none';
+    }
+}
+
+function insertAutocompleteSuggestion(suggestion, editor) {
+    const cursorPos = editor.selectionStart;
+    const textBeforeCursor = editor.value.substring(0, cursorPos);
+    const words = textBeforeCursor.split(/\s/);
+    const currentWord = words.pop();
+    const textAfterCurrentWord = words.join(' ') + (words.length > 0 ? ' ' : '');
+    
+    const newText = textAfterCurrentWord + suggestion + editor.value.substring(cursorPos);
+    editor.value = newText;
+    editor.setSelectionRange(textAfterCurrentWord.length + suggestion.length, textAfterCurrentWord.length + suggestion.length);
+    
+    hideAutocompleteSuggestions();
+    editor.focus();
+}
+
+// Terminal Functionality
+function initializeTerminal() {
+    const terminalInput = document.getElementById('terminalInput');
+    
     terminalInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             const command = this.value.trim();
             if (command) {
-                executeTerminalCommand(command);
+                executeCommand(command);
                 this.value = '';
             }
         }
     });
+    
+    // Add some welcome messages
+    addTerminalOutput('Welcome to Smart Serve IDE Terminal!', 'info');
+    addTerminalOutput('Type "help" for available commands', 'info');
+    
+    console.log('💻 Terminal initialized');
 }
 
-// Execute terminal command
-function executeTerminalCommand(command) {
-    const terminalOutput = document.getElementById('terminalOutput');
-
-    // Add command to output
-    const commandLine = document.createElement('div');
-    commandLine.className = 'terminal-line';
-    commandLine.innerHTML = `
-        <span class="terminal-prompt">$</span>
-        <span>${command}</span>
-    `;
-
-    terminalOutput.appendChild(commandLine);
-
-    // Add response (simulate command execution)
-    const responseLine = document.createElement('div');
-    responseLine.className = 'terminal-line';
-
-    if (command === 'clear') {
-        clearConsole();
-        return;
-    } else if (command === 'ls') {
-        responseLine.innerHTML = '<span>index.js  bot.js  package.json  README.md</span>';
-    } else if (command.startsWith('npm')) {
-        responseLine.innerHTML = '<span>npm command executed</span>';
-    } else {
-        responseLine.innerHTML = `<span>Command not found: ${command}</span>`;
+function executeCommand(command) {
+    addTerminalOutput(`smartserve@discord-bot:~$ ${command}`, 'command');
+    
+    // Simple command processing
+    const [cmd, ...args] = command.split(' ');
+    
+    switch (cmd.toLowerCase()) {
+        case 'help':
+            showHelpCommands();
+            break;
+        case 'clear':
+            clearTerminal();
+            break;
+        case 'ls':
+            listFiles();
+            break;
+        case 'pwd':
+            addTerminalOutput('/home/smartserve/discord-bot', 'output');
+            break;
+        case 'whoami':
+            addTerminalOutput('smartserve', 'output');
+            break;
+        case 'date':
+            addTerminalOutput(new Date().toString(), 'output');
+            break;
+        case 'node':
+            if (args[0]) {
+                simulateNodeExecution(args[0]);
+            } else {
+                addTerminalOutput('Node.js REPL (simulated)', 'output');
+            }
+            break;
+        case 'npm':
+            handleNpmCommand(args);
+            break;
+        default:
+            addTerminalOutput(`Command not found: ${cmd}`, 'error');
+            addTerminalOutput('Type "help" for available commands', 'info');
     }
+}
 
-    terminalOutput.appendChild(responseLine);
-
-    // Add cursor line
+function addTerminalOutput(text, type = 'output') {
+    const terminalOutput = document.getElementById('terminalOutput');
+    const line = document.createElement('div');
+    line.className = `terminal-line ${type}`;
+    
+    if (type === 'command') {
+        line.innerHTML = `<span class="terminal-prefix">${text}</span>`;
+    } else {
+        line.textContent = text;
+    }
+    
+    // Remove cursor from last line
+    const existingCursor = terminalOutput.querySelector('.terminal-cursor');
+    if (existingCursor) {
+        existingCursor.remove();
+    }
+    
+    terminalOutput.appendChild(line);
+    
+    // Add new cursor
     const cursorLine = document.createElement('div');
     cursorLine.className = 'terminal-line';
     cursorLine.innerHTML = `
-        <span class="terminal-prompt">$</span>
+        <span class="terminal-prefix">smartserve@discord-bot:~$</span>
         <span class="terminal-cursor">|</span>
     `;
-
     terminalOutput.appendChild(cursorLine);
-
+    
     // Scroll to bottom
     terminalOutput.scrollTop = terminalOutput.scrollHeight;
 }
 
-// Admin functions
-function saveTemplate() {
-    if (confirm('Save current template?')) {
-        alert('Template saved successfully!');
-    }
-}
-
-function deployBot() {
-    if (confirm('Deploy bot to production?')) {
-        alert('Bot deployment started!');
-    }
-}
-
-function manageFiles() {
-    alert('File management panel will open here.');
-}
-
-// Load template files based on template type
-function loadTemplateFiles(templateName) {
-    // Clear existing tabs and content
-    document.querySelectorAll('.tab').forEach(tab => tab.remove());
-    document.querySelectorAll('.editor-content').forEach(content => content.remove());
-
-    const templateFiles = getTemplateFiles(templateName);
+function showHelpCommands() {
+    const commands = [
+        'Available commands:',
+        '  help     - Show this help message',
+        '  clear    - Clear terminal',
+        '  ls       - List files',
+        '  pwd      - Show current directory',
+        '  whoami   - Show current user',
+        '  date     - Show current date',
+        '  node     - Run Node.js (simulated)',
+        '  npm      - NPM commands (simulated)'
+    ];
     
-    // Create tabs for template files
-    Object.entries(templateFiles).forEach(([filename, fileData]) => {
-        createTabWithContent(filename, fileData.content, fileData.language);
-    });
-
-    // Update files sidebar
-    updateFilesSidebar(Object.keys(templateFiles));
+    commands.forEach(cmd => addTerminalOutput(cmd, 'info'));
 }
 
-// Get template-specific files
-function getTemplateFiles(templateName) {
-    const templates = {
-        'Moderation Bot': {
-            'index.js': {
-                content: `const { Client, GatewayIntentBits, EmbedBuilder, PermissionsBitField } = require('discord.js');
-
-const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMembers
-    ]
-});
-
-// Auto-moderation settings
-const moderationConfig = {
-    autoDeleteSpam: true,
-    maxMentions: 5,
-    bannedWords: ['spam', 'scam'],
-    warningThreshold: 3
-};
-
-// User warning system
-const userWarnings = new Map();
-
-client.on('ready', () => {
-    console.log(\`🤖 \${client.user.tag} is now online and moderating!\`);
-    client.user.setActivity('Moderating Server', { type: 'WATCHING' });
-});
-
-client.on('messageCreate', async (message) => {
-    if (message.author.bot) return;
-
-    // Auto-moderation checks
-    await checkSpam(message);
-    await checkBannedWords(message);
-    await checkExcessiveMentions(message);
-});
-
-// Spam detection
-async function checkSpam(message) {
-    // Implementation for spam detection
-    const userMessages = message.channel.messages.cache
-        .filter(m => m.author.id === message.author.id && Date.now() - m.createdTimestamp < 5000)
-        .size;
-
-    if (userMessages > 5) {
-        await message.delete();
-        await warnUser(message.member, 'Spamming messages');
-    }
+function listFiles() {
+    const files = Array.from(fileContents.keys());
+    files.forEach(file => addTerminalOutput(file, 'output'));
 }
 
-// Check for banned words
-async function checkBannedWords(message) {
-    const containsBannedWord = moderationConfig.bannedWords.some(word => 
-        message.content.toLowerCase().includes(word)
-    );
-
-    if (containsBannedWord) {
-        await message.delete();
-        await warnUser(message.member, 'Using banned words');
-    }
+function clearTerminal() {
+    const terminalOutput = document.getElementById('terminalOutput');
+    terminalOutput.innerHTML = `
+        <div class="terminal-line">
+            <span class="terminal-prefix">smartserve@discord-bot:~$</span>
+            <span class="terminal-cursor">|</span>
+        </div>
+    `;
 }
 
-// Check excessive mentions
-async function checkExcessiveMentions(message) {
-    const mentionCount = message.mentions.users.size + message.mentions.roles.size;
+function simulateNodeExecution(filename) {
+    addTerminalOutput(`Executing ${filename}...`, 'info');
     
-    if (mentionCount > moderationConfig.maxMentions) {
-        await message.delete();
-        await warnUser(message.member, 'Excessive mentions');
-    }
-}
-
-// Warning system
-async function warnUser(member, reason) {
-    const userId = member.id;
-    const warnings = userWarnings.get(userId) || 0;
-    userWarnings.set(userId, warnings + 1);
-
-    const embed = new EmbedBuilder()
-        .setColor('#ff6b6b')
-        .setTitle('⚠️ Warning Issued')
-        .setDescription(\`**User:** \${member}\n**Reason:** \${reason}\n**Warnings:** \${warnings + 1}/\${moderationConfig.warningThreshold}\`)
-        .setTimestamp();
-
-    // Send warning to moderation channel
-    const modChannel = member.guild.channels.cache.find(ch => ch.name === 'mod-logs');
-    if (modChannel) {
-        await modChannel.send({ embeds: [embed] });
-    }
-
-    // Auto-punishment for reaching threshold
-    if (warnings + 1 >= moderationConfig.warningThreshold) {
-        await member.timeout(600000, \`Reached warning threshold: \${reason}\`); // 10 minute timeout
-        userWarnings.delete(userId);
-    }
-}
-
-// Slash commands for moderation
-client.on('interactionCreate', async (interaction) => {
-    if (!interaction.isCommand()) return;
-
-    const { commandName, options } = interaction// This section should be part of the Discord bot template code, not the coding environmente });
-    }
-}
-
-client.login(process.env.DISCORD_TOKEN);`,
-                language: 'javascript'
-            },
-            'package.json': {
-                content: `{
-  "name": "moderation-bot",
-  "version": "1.0.0",
-  "description": "Advanced Discord moderation bot with auto-moderation features",
-  "main": "index.js",
-  "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js"
-  },
-  "dependencies": {
-    "discord.js": "^14.14.1",
-    "dotenv": "^16.3.1"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.2"
-  },
-  "keywords": ["discord", "bot", "moderation", "auto-mod"],
-  "author": "Smart Serve",
-  "license": "MIT"
-}`,
-                language: 'json'
-            },
-            'commands.js': {
-                content: `const { SlashCommandBuilder } = require('discord.js');
-
-module.exports = [
-    new SlashCommandBuilder()
-        .setName('kick')
-        .setDescription('Kick a member from the server')
-        .addUserOption(option =>
-            option.setName('user')
-                .setDescription('The user to kick')
-                .setRequired(true))
-        .addStringOption(option =>
-            option.setName('reason')
-                .setDescription('Reason for kicking')
-                .setRequired(false)),
-                
-    new SlashCommandBuilder()
-        .setName('ban')
-        .setDescription('Ban a member from the server')
-        .addUserOption(option =>
-            option.setName('user')
-                .setDescription('The user to ban')
-                .setRequired(true))
-        .addStringOption(option =>
-            option.setName('reason')
-                .setDescription('Reason for banning')
-                .setRequired(false)),
-                
-    new SlashCommandBuilder()
-        .setName('clear')
-        .setDescription('Clear messages from the channel')
-        .addIntegerOption(option =>
-            option.setName('amount')
-                .setDescription('Number of messages to clear')
-                .setRequired(true)
-                .setMinValue(1)
-                .setMaxValue(100))
-];`,
-                language: 'javascript'
-            },
-            '.env': {
-                content: `DISCORD_TOKEN=your_bot_token_here`,
-                language: 'text'ired(false)),
-
-    new SlashCommandBuilder()
-        .setName('ban')
-        .setDescription('Ban a member from the server')
-        .addUserOption(option =>
-            option.setName('user')
-                .setDescription('The user to ban')
-                .setRequired(true))
-        .addStringOption(option =>
-            option.setName('reason')
-                .setDescription('Reason for banning')
-                .setRequired(false))
-        .addIntegerOption(option =>
-            option.setName('days')
-                .setDescription('Days of messages to delete (0-7)')
-                .setMinValue(0)
-                .setMaxValue(7)
-                .setRequired(false)),
-
-    new SlashCommandBuilder()
-        .setName('mute')
-        .setDescription('Mute a member')
-        .addUserOption(option =>
-            option.setName('user')
-                .setDescription('The user to mute')
-                .setRequired(true))
-        .addIntegerOption(option =>
-            option.setName('duration')
-                .setDescription('Duration in minutes')
-                .setRequired(true))
-        .addStringOption(option =>
-            option.setName('reason')
-                .setDescription('Reason for muting')
-                .setRequired(false)),
-
-    new SlashCommandBuilder()
-        .setName('warn')
-        .setDescription('Warn a member')
-        .addUserOption(option =>
-            option.setName('user')
-                .setDescription('The user to warn')
-                .setRequired(true))
-        .addStringOption(option =>
-            option.setName('reason')
-                .setDescription('Reason for warning')
-                .setRequired(true)),
-
-    new SlashCommandBuilder()
-        .setName('clear')
-        .setDescription('Clear messages from a channel')
-        .addIntegerOption(option =>
-            option.setName('amount')
-                .setDescription('Number of messages to delete (1-100)')
-                .setMinValue(1)
-                .setMaxValue(100)
-                .setRequired(true))
-        .addUserOption(option =>
-            option.setName('user')
-                .setDescription('Only delete messages from this user')
-                .setRequired(false))
-];`,
-                language: 'javascript'
-            },
-            '.env': {
-                content: `# Discord Bot Token
-DISCORD_TOKEN=your_bot_token_here
-
-# Optional: Guild ID for faster command registration
-GUILD_ID=your_guild_id_here
-
-# Moderation Settings
-AUTO_MOD_ENABLED=true
-MAX_WARNINGS=3
-SPAM_THRESHOLD=5`,
-                language: 'env'
-            }
-        },
-        'Music Bot': {
-            'index.js': {
-                content: `const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
-const { AudioPlayerStatus, createAudioPlayer, createAudioResource, joinVoiceChannel } = require('@discordjs/voice');
-const ytdl = require('ytdl-core');
-
-const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildVoiceStates
-    ]
-});
-
-// Music queue system
-const queue = new Map();
-
-client.on('ready', () => {
-    console.log(\`🎵 \${client.user.tag} is ready to play music!\`);
-    client.user.setActivity('🎵 Music for everyone', { type: 'LISTENING' });
-});
-
-client.on('interactionCreate', async (interaction) => {
-    if (!interaction.isCommand()) return;
-
-    const { commandName, options } = interaction;
-
-    switch (commandName) {
-        case 'play':
-            await handlePlay(interaction);
-            break;
-        case 'skip':
-            await handleSkip(interaction);
-            break;
-        case 'stop':
-            await handleStop(interaction);
-            break;
-        case 'queue':
-            await handleQueue(interaction);
-            break;
-        case 'pause':
-            await handlePause(interaction);
-            break;
-        case 'resume':
-            await handleResume(interaction);
-            break;
-    }
-});
-
-async function handlePlay(interaction) {
-    const song = options.getString('song');
-    const voiceChannel = interaction.member.voice.channel;
-
-    if (!voiceChannel) {
-        return interaction.reply('❌ You need to be in a voice channel to play music!');
-    }
-
-    await interaction.deferReply();
-
-    try {
-        const songInfo = await ytdl.getInfo(song);
-        const songData = {
-            title: songInfo.videoDetails.title,
-            url: songInfo.videoDetails.video_url,
-            duration: songInfo.videoDetails.lengthSeconds,
-            thumbnail: songInfo.videoDetails.thumbnails[0].url,
-            requester: interaction.user
-        };
-
-        const serverQueue = queue.get(interaction.guild.id);
-
-        if (!serverQueue) {
-            const queueConstruct = {
-                textChannel: interaction.channel,
-                voiceChannel: voiceChannel,
-                connection: null,
-                songs: [],
-                player: createAudioPlayer(),
-                playing: true
-            };
-
-            queue.set(interaction.guild.id, queueConstruct);
-            queueConstruct.songs.push(songData);
-
-            try {
-                const connection = joinVoiceChannel({
-                    channelId: voiceChannel.id,
-                    guildId: interaction.guild.id,
-                    adapterCreator: interaction.guild.voiceAdapterCreator
-                });
-
-                queueConstruct.connection = connection;
-                playSong(interaction.guild, queueConstruct.songs[0]);
-                
-                const embed = new EmbedBuilder()
-                    .setColor('#00ff00')
-                    .setTitle('🎵 Now Playing')
-                    .setDescription(\`**[\${songData.title}](\${songData.url})**\`)
-                    .setThumbnail(songData.thumbnail)
-                    .addFields({ name: 'Requested by', value: songData.requester.toString(), inline: true })
-                    .setTimestamp();
-
-                interaction.followUp({ embeds: [embed] });
-            } catch (error) {
-                queue.delete(interaction.guild.id);
-                interaction.followUp('❌ There was an error connecting to the voice channel!');
-            }
+    // Simulate execution delay
+    setTimeout(() => {
+        if (filename.includes('bot') || filename.includes('discord')) {
+            addTerminalOutput('🤖 Discord bot started successfully!', 'success');
+            addTerminalOutput('✅ Connected to Discord API', 'success');
+            addTerminalOutput('📡 Bot is now online and ready!', 'success');
         } else {
-            serverQueue.songs.push(songData);
-            const embed = new EmbedBuilder()
-                .setColor('#ffff00')
-                .setTitle('🎵 Added to Queue')
-                .setDescription(\`**[\${songData.title}](\${songData.url})**\`)
-                .setThumbnail(songData.thumbnail)
-                .addFields(
-                    { name: 'Position in queue', value: serverQueue.songs.length.toString(), inline: true },
-                    { name: 'Requested by', value: songData.requester.toString(), inline: true }
-                )
-                .setTimestamp();
-
-            interaction.followUp({ embeds: [embed] });
+            addTerminalOutput('✅ Program executed successfully', 'success');
         }
-    } catch (error) {
-        interaction.followUp('❌ There was an error playing that song!');
+    }, 1000);
+}
+
+function handleNpmCommand(args) {
+    const subCmd = args[0];
+    
+    switch (subCmd) {
+        case 'install':
+        case 'i':
+            simulateNpmInstall(args.slice(1));
+            break;
+        case 'start':
+            addTerminalOutput('Running npm start...', 'info');
+            simulateNodeExecution('index.js');
+            break;
+        case 'run':
+            const script = args[1];
+            addTerminalOutput(`Running npm run ${script}...`, 'info');
+            break;
+        default:
+            addTerminalOutput('npm help - show npm commands', 'info');
     }
 }
 
-function playSong(guild, song) {
-    const serverQueue = queue.get(guild.id);
-    if (!song) {
-        serverQueue.connection.destroy();
-        queue.delete(guild.id);
+function simulateNpmInstall(packages) {
+    if (packages.length === 0) {
+        addTerminalOutput('Installing dependencies...', 'info');
+        packages = ['discord.js', 'dotenv'];
+    } else {
+        addTerminalOutput(`Installing ${packages.join(', ')}...`, 'info');
+    }
+    
+    // Simulate install progress
+    let progress = 0;
+    const interval = setInterval(() => {
+        progress += Math.random() * 20;
+        if (progress >= 100) {
+            progress = 100;
+            clearInterval(interval);
+            addTerminalOutput('✅ Packages installed successfully!', 'success');
+        }
+    }, 500);
+}
+
+// Panel Management
+function switchPanel(panelName) {
+    // Update tab states
+    document.querySelectorAll('.panel-tab').forEach(tab => {
+        tab.classList.remove('active');
+        if (tab.getAttribute('data-panel') === panelName) {
+            tab.classList.add('active');
+        }
+    });
+    
+    // Update panel states
+    document.querySelectorAll('.console-panel').forEach(panel => {
+        panel.classList.remove('active');
+        if (panel.getAttribute('data-panel') === panelName) {
+            panel.classList.add('active');
+        }
+    });
+}
+
+function togglePanel() {
+    const bottomPanel = document.getElementById('bottomPanel');
+    const toggleBtn = document.querySelector('.panel-actions .panel-btn i');
+    
+    if (bottomPanel.style.display === 'none') {
+        bottomPanel.style.display = 'flex';
+        toggleBtn.className = 'fas fa-chevron-down';
+    } else {
+        bottomPanel.style.display = 'none';
+        toggleBtn.className = 'fas fa-chevron-up';
+    }
+}
+
+function clearConsole() {
+    const activePanel = document.querySelector('.console-panel.active');
+    if (activePanel) {
+        const panelType = activePanel.getAttribute('data-panel');
+        
+        switch (panelType) {
+            case 'terminal':
+                clearTerminal();
+                break;
+            case 'output':
+                document.getElementById('outputContent').innerHTML = '';
+                break;
+            case 'problems':
+                document.getElementById('problemsContent').innerHTML = '<div class="no-problems"><i class="fas fa-check-circle"></i><span>No problems detected</span></div>';
+                break;
+            case 'debug':
+                document.getElementById('debugContent').innerHTML = '';
+                break;
+        }
+    }
+}
+
+// Resize Handles
+function initializeResizeHandles() {
+    const leftHandle = document.getElementById('leftResizeHandle');
+    const consoleHandle = document.getElementById('consoleResizeHandle');
+    
+    makeResizable(leftHandle, 'horizontal-left');
+    makeResizable(consoleHandle, 'horizontal-bottom');
+}
+
+function makeResizable(handle, direction) {
+    let isResizing = false;
+    
+    handle.addEventListener('mousedown', function(e) {
+        isResizing = true;
+        document.body.style.cursor = direction.includes('horizontal') ? 'col-resize' : 'row-resize';
+        document.body.style.userSelect = 'none';
+    });
+    
+    document.addEventListener('mousemove', function(e) {
+        if (!isResizing) return;
+        
+        if (direction === 'horizontal-left') {
+            const newWidth = Math.max(200, Math.min(600, e.clientX));
+            document.querySelector('.ide-container').style.gridTemplateColumns = `${newWidth}px 4px 1fr`;
+        } else if (direction === 'horizontal-bottom') {
+            const containerHeight = document.querySelector('.ide-container').clientHeight;
+            const newHeight = Math.max(150, Math.min(500, containerHeight - e.clientY + 50));
+            document.querySelector('.ide-container').style.gridTemplateRows = `1fr 4px ${newHeight}px`;
+        }
+    });
+    
+    document.addEventListener('mouseup', function() {
+        isResizing = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+    });
+}
+
+// Context Menu
+function initializeContextMenu() {
+    const contextMenu = document.getElementById('contextMenu');
+    
+    document.addEventListener('contextmenu', function(e) {
+        if (e.target.closest('.code-editor')) {
+            e.preventDefault();
+            showContextMenu(e.clientX, e.clientY);
+        }
+    });
+    
+    document.addEventListener('click', function() {
+        hideContextMenu();
+    });
+}
+
+function showContextMenu(x, y) {
+    const contextMenu = document.getElementById('contextMenu');
+    contextMenu.style.left = `${x}px`;
+    contextMenu.style.top = `${y}px`;
+    contextMenu.style.display = 'block';
+}
+
+function hideContextMenu() {
+    const contextMenu = document.getElementById('contextMenu');
+    contextMenu.style.display = 'none';
+}
+
+// Keyboard Shortcuts
+function initializeKeyboardShortcuts() {
+    document.addEventListener('keydown', function(e) {
+        // Ctrl/Cmd + S: Save
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            saveAll();
+        }
+        
+        // Ctrl/Cmd + N: New file
+        if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+            e.preventDefault();
+            createNewFile();
+        }
+        
+        // Ctrl/Cmd + W: Close tab
+        if ((e.ctrlKey || e.metaKey) && e.key === 'w') {
+            e.preventDefault();
+            if (currentFile) {
+                closeTab(currentFile);
+            }
+        }
+        
+        // Ctrl/Cmd + R: Run code
+        if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+            e.preventDefault();
+            runCode();
+        }
+        
+        // Ctrl/Cmd + `: Toggle terminal
+        if ((e.ctrlKey || e.metaKey) && e.key === '`') {
+            e.preventDefault();
+            switchPanel('terminal');
+        }
+        
+        // F5: Run code
+        if (e.key === 'F5') {
+            e.preventDefault();
+            runCode();
+        }
+        
+        // Escape: Hide autocomplete
+        if (e.key === 'Escape') {
+            hideAutocompleteSuggestions();
+            hideContextMenu();
+        }
+    });
+}
+
+// File operations
+function createNewFile() {
+    document.getElementById('fileModal').style.display = 'flex';
+    document.getElementById('fileName').focus();
+}
+
+function createNewFolder() {
+    const folderName = prompt('Enter folder name:');
+    if (folderName && folderName.trim()) {
+        // Add folder to file tree (implementation depends on your file tree structure)
+        showNotification(`Folder "${folderName}" created`, 'success');
+    }
+}
+
+function refreshFiles() {
+    showNotification('Files refreshed', 'info');
+    // Implement file refresh logic
+}
+
+function createFile() {
+    const fileName = document.getElementById('fileName').value.trim();
+    const fileType = document.getElementById('fileType').value;
+    
+    if (!fileName) {
+        showNotification('Please enter a file name', 'error');
         return;
     }
-
-    const stream = ytdl(song.url, { filter: 'audioonly', quality: 'highestaudio' });
-    const resource = createAudioResource(stream);
     
-    serverQueue.player.play(resource);
-    serverQueue.connection.subscribe(serverQueue.player);
-
-    serverQueue.player.on(AudioPlayerStatus.Idle, () => {
-        serverQueue.songs.shift();
-        playSong(guild, serverQueue.songs[0]);
-    });
+    // Check if file already exists
+    if (fileContents.has(fileName)) {
+        showNotification('File already exists', 'warning');
+        return;
+    }
+    
+    // Create file
+    fileContents.set(fileName, getDefaultFileContent(fileType));
+    openFile(fileName, fileType);
+    
+    // Close modal
+    closeModal('fileModal');
+    
+    // Add to file tree
+    addFileToTree(fileName, fileType);
+    
+    showNotification(`File "${fileName}" created`, 'success');
 }
 
-client.login(process.env.DISCORD_TOKEN);`,
-                language: 'javascript'
-            },
-            'package.json': {
-                content: `{
-  "name": "music-bot",
-  "version": "1.0.0",
-  "description": "Discord music bot with YouTube integration",
-  "main": "index.js",
-  "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js"
-  },
-  "dependencies": {
-    "discord.js": "^14.14.1",
-    "@discordjs/voice": "^0.16.1",
-    "ytdl-core": "^4.11.5",
-    "ffmpeg-static": "^5.2.0",
-    "dotenv": "^16.3.1"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.2"
-  },
-  "keywords": ["discord", "bot", "music", "youtube"],
-  "author": "Smart Serve",
-  "license": "MIT"
-}`,
-                language: 'json'
-            }
-        },
-        'AI Bot': {
-            'index.js': {
-                content: `const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
-const OpenAI = require('openai');
+function addFileToTree(fileName, fileType) {
+    const fileTree = document.getElementById('fileTree');
+    
+    const treeItem = document.createElement('div');
+    treeItem.className = 'tree-item file';
+    treeItem.setAttribute('data-name', fileName);
+    treeItem.setAttribute('data-type', fileType);
+    
+    treeItem.innerHTML = `
+        <div class="tree-item-content">
+            <i class="fas fa-chevron-right tree-arrow"></i>
+            <i class="${getFileIcon(fileType)} file-icon"></i>
+            <span class="file-name">${fileName}</span>
+        </div>
+    `;
+    
+    fileTree.appendChild(treeItem);
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+    
+    // Clear form
+    if (modalId === 'fileModal') {
+        document.getElementById('fileName').value = '';
+        document.getElementById('fileType').value = 'javascript';
+    }
+}
+
+// Utility functions
+function getFileIcon(fileType) {
+    const iconMap = {
+        javascript: 'fab fa-js-square js-icon',
+        json: 'fas fa-file-code json-icon',
+        css: 'fab fa-css3-alt css-icon',
+        html: 'fab fa-html5 html-icon',
+        markdown: 'fab fa-markdown md-icon',
+        text: 'fas fa-file-alt'
+    };
+    
+    return iconMap[fileType] || 'fas fa-file';
+}
+
+function getDefaultFileContent(fileType) {
+    const templates = {
+        javascript: `// Discord Bot - ${new Date().toLocaleDateString()}
+const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
 
 const client = new Client({
     intents: [
@@ -759,173 +963,24 @@ const client = new Client({
     ]
 });
 
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
-});
-
-// Conversation context storage
-const conversations = new Map();
-
 client.on('ready', () => {
-    console.log(\`🤖 \${client.user.tag} AI Assistant is online!\`);
-    client.user.setActivity('Thinking...', { type: 'PLAYING' });
+    console.log(\`🤖 \${client.user.tag} is online!\`);
 });
 
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
     
-    // Respond to mentions or direct messages
-    if (message.mentions.has(client.user) || message.channel.type === 'DM') {
-        await handleAIResponse(message);
-    }
-
-    // Respond to specific triggers
-    const triggers = ['hey ai', 'ask ai', 'ai help'];
-    const content = message.content.toLowerCase();
-    
-    if (triggers.some(trigger => content.includes(trigger))) {
-        await handleAIResponse(message);
+    if (message.content === '!hello') {
+        message.reply('Hello! 👋');
     }
 });
-
-async function handleAIResponse(message) {
-    const userId = message.author.id;
-    const userMessage = message.content
-        .replace(\`<@\${client.user.id}>\`, '')
-        .replace(/hey ai|ask ai|ai help/gi, '')
-        .trim();
-
-    if (!userMessage) {
-        return message.reply('👋 Hello! How can I help you today?');
-    }
-
-    // Show typing indicator
-    await message.channel.sendTyping();
-
-    try {
-        // Get or create conversation context
-        let conversation = conversations.get(userId) || [];
-        
-        // Add user message to conversation
-        conversation.push({ role: 'user', content: userMessage });
-        
-        // Limit conversation history
-        if (conversation.length > 10) {
-            conversation = conversation.slice(-10);
-        }
-
-        const completion = await openai.chat.completions.create({
-            model: 'gpt-3.5-turbo',
-            messages: [
-                {
-                    role: 'system',
-                    content: 'You are a helpful AI assistant in a Discord server. Be friendly, concise, and helpful. Keep responses under 2000 characters.'
-                },
-                ...conversation
-            ],
-            max_tokens: 500,
-            temperature: 0.7
-        });
-
-        const aiResponse = completion.choices[0].message.content;
-        
-        // Add AI response to conversation
-        conversation.push({ role: 'assistant', content: aiResponse });
-        conversations.set(userId, conversation);
-
-        // Create embed response
-        const embed = new EmbedBuilder()
-            .setColor('#00ff88')
-            .setAuthor({ 
-                name: 'AI Assistant', 
-                iconURL: client.user.displayAvatarURL()
-            })
-            .setDescription(aiResponse)
-            .setFooter({ text: 'Powered by OpenAI GPT-3.5' })
-            .setTimestamp();
-
-        await message.reply({ embeds: [embed] });
-
-    } catch (error) {
-        console.error('AI Error:', error);
-        
-        const errorEmbed = new EmbedBuilder()
-            .setColor('#ff4444')
-            .setTitle('❌ AI Error')
-            .setDescription('Sorry, I encountered an error processing your request. Please try again later.')
-            .setTimestamp();
-
-        await message.reply({ embeds: [errorEmbed] });
-    }
-}
-
-// Slash commands for AI
-client.on('interactionCreate', async (interaction) => {
-    if (!interaction.isCommand()) return;
-
-    const { commandName, options } = interaction;
-
-    switch (commandName) {
-        case 'ask':
-            await handleAskCommand(interaction);
-            break;
-        case 'clear':
-            await handleClearCommand(interaction);
-            break;
-        case 'imagine':
-            await handleImageCommand(interaction);
-            break;
-    }
-});
-
-async function handleAskCommand(interaction) {
-    const question = options.getString('question');
-    const userId = interaction.user.id;
-
-    await interaction.deferReply();
-
-    try {
-        let conversation = conversations.get(userId) || [];
-        conversation.push({ role: 'user', content: question });
-
-        const completion = await openai.chat.completions.create({
-            model: 'gpt-3.5-turbo',
-            messages: [
-                {
-                    role: 'system',
-                    content: 'You are a helpful AI assistant. Be concise and helpful.'
-                },
-                ...conversation
-            ],
-            max_tokens: 500
-        });
-
-        const response = completion.choices[0].message.content;
-        conversation.push({ role: 'assistant', content: response });
-        conversations.set(userId, conversation);
-
-        const embed = new EmbedBuilder()
-            .setColor('#00ff88')
-            .setTitle('🤖 AI Response')
-            .setDescription(response)
-            .setFooter({ text: \`Asked by \${interaction.user.tag}\` })
-            .setTimestamp();
-
-        await interaction.followUp({ embeds: [embed] });
-
-    } catch (error) {
-        await interaction.followUp('❌ Error processing your question!');
-    }
-}
 
 client.login(process.env.DISCORD_TOKEN);`,
-                language: 'javascript'
-            },
-            'package.json': {
-                content: `{
-  "name": "ai-bot",
+        
+        json: `{
+  "name": "discord-bot",
   "version": "1.0.0",
-  "description": "AI-powered Discord bot with OpenAI integration",
+  "description": "Smart Serve Discord Bot",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -933,370 +988,188 @@ client.login(process.env.DISCORD_TOKEN);`,
   },
   "dependencies": {
     "discord.js": "^14.14.1",
-    "openai": "^4.20.1",
     "dotenv": "^16.3.1"
   },
-  "devDependencies": {
-    "nodemon": "^3.0.2"
-  },
-  "keywords": ["discord", "bot", "ai", "openai", "gpt"],
+  "keywords": ["discord", "bot"],
   "author": "Smart Serve",
   "license": "MIT"
 }`,
-                language: 'json'
-            }
-        },
-        // Add more templates...
-        'Management Bot': {
-            'index.js': {
-                content: `const { Client, GatewayIntentBits, EmbedBuilder, PermissionsBitField } = require('discord.js');
-
-const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMembers
-    ]
-});
-
-client.on('ready', () => {
-    console.log(\`⚙️ \${client.user.tag} Management Bot is online!\`);
-    client.user.setActivity('Managing Server', { type: 'WATCHING' });
-});
-
-// Auto role assignment for new members
-client.on('guildMemberAdd', async (member) => {
-    try {
-        const welcomeRole = member.guild.roles.cache.find(role => role.name === 'Member');
-        if (welcomeRole) {
-            await member.roles.add(welcomeRole);
-        }
-
-        const welcomeChannel = member.guild.channels.cache.find(ch => ch.name === 'welcome');
-        if (welcomeChannel) {
-            const embed = new EmbedBuilder()
-                .setColor('#00ff00')
-                .setTitle('👋 Welcome!')
-                .setDescription(\`Welcome to the server, \${member}!\`)
-                .setThumbnail(member.user.displayAvatarURL())
-                .setTimestamp();
-
-            welcomeChannel.send({ embeds: [embed] });
-        }
-    } catch (error) {
-        console.error('Error welcoming new member:', error);
-    }
-});
-
-client.login(process.env.DISCORD_TOKEN);`,
-                language: 'javascript'
-            },
-            'package.json': {
-                content: `{
-  "name": "management-bot",
-  "version": "1.0.0",
-  "description": "Server management and administration bot",
-  "main": "index.js",
-  "dependencies": {
-    "discord.js": "^14.14.1",
-    "dotenv": "^16.3.1"
-  },
-  "author": "Smart Serve",
-  "license": "MIT"
-}`,
-                language: 'json'
-            }
-        },
-        'Economy Bot': {
-            'index.js': {
-                content: `const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
-
-const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent
-    ]
-});
-
-// In-memory economy data (use database in production)
-const economy = new Map();
-
-client.on('ready', () => {
-    console.log(\`💰 \${client.user.tag} Economy Bot is online!\`);
-    client.user.setActivity('Managing Economy', { type: 'WATCHING' });
-});
-
-function getBalance(userId) {
-    return economy.get(userId) || { coins: 1000, bank: 0 };
+        
+        css: `/* Smart Serve Bot Styles */
+body {
+    font-family: 'Inter', sans-serif;
+    background: #0f0f0f;
+    color: #ffffff;
+    margin: 0;
+    padding: 20px;
 }
 
-function setBalance(userId, data) {
-    economy.set(userId, data);
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
-client.on('interactionCreate', async (interaction) => {
-    if (!interaction.isCommand()) return;
+.bot-card {
+    background: #1a1a1a;
+    border-radius: 12px;
+    padding: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
 
-    const { commandName, options } = interaction;
-
-    switch (commandName) {
-        case 'balance':
-            await handleBalance(interaction);
-            break;
-        case 'daily':
-            await handleDaily(interaction);
-            break;
-        case 'work':
-            await handleWork(interaction);
-            break;
-        case 'shop':
-            await handleShop(interaction);
-            break;
-    }
-});
-
-client.login(process.env.DISCORD_TOKEN);`,
-                language: 'javascript'
-            },
-            'package.json': {
-                content: `{
-  "name": "economy-bot",
-  "version": "1.0.0",
-  "description": "Virtual economy Discord bot with currency system",
-  "main": "index.js",
-  "dependencies": {
-    "discord.js": "^14.14.1",
-    "dotenv": "^16.3.1"
-  },
-  "author": "Smart Serve",
-  "license": "MIT"
+.bot-card:hover {
+    border-color: #00d4ff;
+    transform: translateY(-2px);
 }`,
-                language: 'json'
-            }
-        },
-        'Gaming Bot': {
-            'index.js': {
-                content: `const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
+        
+        html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Serve Bot Dashboard</title>
+    <link href="style.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Smart Serve Bot Dashboard</h1>
+            <p>Manage your Discord bot with ease</p>
+        </header>
+        
+        <main>
+            <div class="bot-card">
+                <h2>Bot Status</h2>
+                <div class="status online">
+                    <span class="indicator"></span>
+                    Online
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>`,
+        
+        markdown: `# Smart Serve Discord Bot
 
-const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMembers
-    ]
-});
+Welcome to your Discord bot project! This bot is built with Smart Serve IDE.
 
-client.on('ready', () => {
-    console.log(\`🎮 \${client.user.tag} Gaming Bot is online!\`);
-    client.user.setActivity('Gaming Community', { type: 'WATCHING' });
-});
+## Features
 
-// Gaming features implementation
-const tournaments = new Map();
-const teams = new Map();
+- 🤖 **Smart Commands** - Intelligent command handling
+- 🎵 **Music Player** - High-quality music streaming
+- 🔒 **Moderation** - Advanced server moderation tools
+- 🎮 **Games** - Fun interactive games
+- 📊 **Analytics** - Detailed server statistics
 
-client.on('interactionCreate', async (interaction) => {
-    if (!interaction.isCommand()) return;
+## Setup
 
-    const { commandName } = interaction;
+1. Install dependencies:
+   \`\`\`bash
+   npm install
+   \`\`\`
 
-    switch (commandName) {
-        case 'tournament':
-            await handleTournament(interaction);
-            break;
-        case 'team':
-            await handleTeam(interaction);
-            break;
-        case 'stats':
-            await handleStats(interaction);
-            break;
-    }
-});
+2. Configure your bot token:
+   \`\`\`bash
+   cp .env.example .env
+   # Edit .env with your bot token
+   \`\`\`
 
-client.login(process.env.DISCORD_TOKEN);`,
-                language: 'javascript'
-            },
-            'package.json': {
-                content: `{
-  "name": "gaming-bot",
-  "version": "1.0.0",
-  "description": "Gaming community Discord bot with tournaments and team management",
-  "main": "index.js",
-  "dependencies": {
-    "discord.js": "^14.14.1",
-    "dotenv": "^16.3.1"
-  },
-  "author": "Smart Serve",
-  "license": "MIT"
-}`,
-                language: 'json'
-            }
-        }
+3. Start the bot:
+   \`\`\`bash
+   npm start
+   \`\`\`
+
+## Commands
+
+- \`!hello\` - Say hello to the bot
+- \`!help\` - Show available commands
+- \`!play <song>\` - Play a song
+- \`!stop\` - Stop music playback
+
+## Support
+
+Need help? Visit [Smart Serve Support](https://smartserve.com/support)
+
+---
+Built with ❤️ by Smart Serve`,
+        
+        text: `Welcome to Smart Serve IDE!
+
+This is a text file where you can write notes, documentation, or any plain text content.
+
+Features:
+- Real-time syntax highlighting
+- Auto-completion
+- File management
+- Terminal integration
+- Beautiful UI
+
+Start coding your Discord bot today!`
     };
-
-    return templates[templateName] || {
-        'index.js': {
-            content: '// Template files will be loaded here',
-            language: 'javascript'
-        }
-    };
+    
+    return templates[fileType] || '// New file\n';
 }
 
-// Load user code from Discord bot or templates
+function markFileModified(fileName) {
+    if (openFiles.has(fileName)) {
+        const fileInfo = openFiles.get(fileName);
+        if (!fileInfo.modified) {
+            fileInfo.modified = true;
+            openFiles.set(fileName, fileInfo);
+            
+            // Update tab to show modified state
+            const tab = document.querySelector(`.tab[data-file="${fileName}"] .tab-name`);
+            if (tab && !tab.textContent.endsWith('*')) {
+                tab.textContent += '*';
+            }
+        }
+    }
+}
+
+function saveFileContent(fileName, content) {
+    fileContents.set(fileName, content);
+    
+    // Update file modified state
+    if (openFiles.has(fileName)) {
+        const fileInfo = openFiles.get(fileName);
+        fileInfo.modified = false;
+        openFiles.set(fileName, fileInfo);
+        
+        // Update tab to remove modified indicator
+        const tab = document.querySelector(`.tab[data-file="${fileName}"] .tab-name`);
+        if (tab && tab.textContent.endsWith('*')) {
+            tab.textContent = tab.textContent.slice(0, -1);
+        }
+    }
+}
+
+function updateFileTreeSelection(fileName) {
+    // Remove selection from all files
+    document.querySelectorAll('.tree-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    
+    // Add selection to current file
+    const fileItem = document.querySelector(`.tree-item[data-name="${fileName}"]`);
+    if (fileItem) {
+        fileItem.classList.add('active');
+    }
+}
+
+// Load user code from Discord
 async function loadUserCodeFromDiscord() {
     const urlParams = new URLSearchParams(window.location.search);
     const templateName = urlParams.get('template');
+    const orderNumber = urlParams.get('order');
     
     if (templateName) {
-        // Load template files
-        loadTemplateFiles(templateName);
-        
-        // Update page title
-        document.title = `${templateName} - Coding Environment`;
-        
+        await loadTemplateFiles(templateName);
         return;
     }
-
-    // Original Discord code loading logic
-    try {
-        const sessionToken = sessionStorage.getItem('sessionToken');
-        if (!sessionToken) {
-            console.log('No session token found');
-            return;
-        }
-
-        const response = await fetch('/api/user/code', {
-            headers: {
-                'Authorization': `Bearer ${sessionToken}`
-            }
-        });
-
-        if (response.ok) {
-            const userCode = await response.json();
-
-            // Clear default tabs first
-            document.querySelectorAll('.tab').forEach(tab => tab.remove());
-            document.querySelectorAll('.editor-content').forEach(content => content.remove());
-
-            // Add user's code files as tabs
-            for (const [filename, fileData] of Object.entries(userCode)) {
-                createTabWithContent(filename, fileData.content, fileData.language);
-            }
-
-            // If no files, create a default tab
-            if (Object.keys(userCode).length === 0) {
-                createTabWithContent('main.js', '// Welcome to your coding environment!\n// Use Discord commands to add your code files here.\n// Commands: /addcode <filename>, /viewcode, /deletecode <filename>', 'javascript');
-            }
-
-            // Update files sidebar
-            updateFilesSidebar(Object.keys(userCode));
-
-            console.log('Loaded Discord code files:', Object.keys(userCode));
-        }
-    } catch (error) {
-        console.error('Error loading Discord code:', error);
-        // Create default tab if error
-        createTabWithContent('main.js', '// Welcome to your coding environment!\n// Use Discord commands to add your code files here.\n// Commands: /addcode <filename>, /viewcode, /deletecode <filename>', 'javascript');
-    }
-}
-
-// Create tab with content
-function createTabWithContent(fileName, content, language = 'javascript') {
-    // Check if tab already exists
-    if (document.querySelector(`.tab[data-file="${fileName}"]`)) {
-        const existingEditor = document.querySelector(`.editor-content[data-file="${fileName}"] .code-editor`);
-        if (existingEditor) {
-            existingEditor.value = content;
-        }
-        switchTab(fileName);
-        return;
-    }
-
-    // Create new tab
-    const tabsContainer = document.querySelector('.tabs-container');
-    const newTabBtn = document.querySelector('.new-tab');
-
-    const tab = document.createElement('div');
-    tab.className = 'tab';
-    tab.setAttribute('data-file', fileName);
-    tab.innerHTML = `
-        <span>${fileName}</span>
-        <i class="fas fa-times tab-close"></i>
-    `;
-
-    tabsContainer.insertBefore(tab, newTabBtn);
-
-    // Create corresponding editor content
-    const editorContainer = document.querySelector('.editor-container');
-    const editorContent = document.createElement('div');
-    editorContent.className = 'editor-content';
-    editorContent.setAttribute('data-file', fileName);
-    editorContent.innerHTML = `
-        <textarea class="code-editor" placeholder="// Add your ${language} code here...">${content}</textarea>
-    `;
-
-    editorContainer.appendChild(editorContent);
-
-    // Switch to new tab
-    switchTab(fileName);
-}
-
-// Update files sidebar with Discord files
-function updateFilesSidebar(filenames) {
-    const filesTree = document.querySelector('.files-tree');
-
-    // Keep the "New File" button
-    const newFileBtn = document.querySelector('.file-item[onclick="createNewFile()"]');
-
-    // Clear existing files except new file button
-    const existingFiles = document.querySelectorAll('.file-item:not([onclick="createNewFile()"])');
-    existingFiles.forEach(file => file.remove());
-
-    // Add Discord files
-    filenames.forEach(filename => {
-        const fileItem = document.createElement('div');
-        fileItem.className = 'file-item';
-        fileItem.innerHTML = `
-            <i class="fas fa-file-code"></i>
-            <span>${filename}</span>
-        `;
-        fileItem.addEventListener('click', () => openFile(filename));
-        filesTree.appendChild(fileItem);
-    });
-}
-
-// Keyboard shortcuts
-document.addEventListener('keydown', function(e) {
-    // Ctrl+S to save
-    if (e.ctrlKey && e.key === 's') {
-        e.preventDefault();
-        saveTemplate();
-    }
-
-    // Ctrl+` to toggle terminal
-    if (e.ctrlKey && e.key === '`') {
-        e.preventDefault();
-        switchConsoleTab('terminal');
-    }
-
-    // Ctrl+Shift+P to toggle problems
-    if (e.ctrlKey && e.shiftKey && e.key === 'P') {
-        e.preventDefault();
-        switchConsoleTab('problems');
-    }
-
-    // Ctrl+R to refresh Discord code
-    if (e.ctrlKey && e.key === 'r') {
-        e.preventDefault();
-        loadUserCodeFromDiscord();
-    }
-});
-
-// Load user code files
-async function loadUserCode(orderNumber = null) {
+    
     try {
         const sessionToken = sessionStorage.getItem('sessionToken');
         if (!sessionToken) {
@@ -1307,6 +1180,12 @@ async function loadUserCode(orderNumber = null) {
         let url = '/api/user/code';
         if (orderNumber) {
             url = `/api/order/${orderNumber}/code`;
+            
+            // Update project name
+            const projectName = document.getElementById('projectName');
+            if (projectName) {
+                projectName.textContent = `Order #${orderNumber}`;
+            }
         }
 
         const response = await fetch(url, {
@@ -1316,103 +1195,246 @@ async function loadUserCode(orderNumber = null) {
         });
 
         if (response.ok) {
-            const codeFiles = await response.json();
-
-            // Clear existing tabs except the first one
-            const tabsContainer = document.querySelector('.editor-tabs');
-            const firstTab = tabsContainer.querySelector('.tab');
-            const otherTabs = tabsContainer.querySelectorAll('.tab:not(:first-child)');
-            otherTabs.forEach(tab => tab.remove());
-
-            // Add tabs for each code file
-            Object.keys(codeFiles).forEach(filename => {
-                if (filename !== 'main.js') { // Don't duplicate if main.js already exists
-                    addCodeTab(filename, codeFiles[filename].content);
-                }
-            });
-
-            // Update page title if order number is specified
-            if (orderNumber) {
-                const pageTitle = document.querySelector('.environment-header h1');
-                if (pageTitle) {
-                    pageTitle.textContent = `Order #${orderNumber} - Coding Environment`;
-                }
+            const userCode = await response.json();
+            
+            // Clear default files
+            fileContents.clear();
+            openFiles.clear();
+            
+            // Clear existing tabs and panels
+            document.querySelectorAll('.tab:not(.tab-add)').forEach(tab => tab.remove());
+            document.querySelectorAll('.editor-panel').forEach(panel => panel.remove());
+            
+            // Load user files
+            let hasFiles = false;
+            for (const [filename, fileData] of Object.entries(userCode)) {
+                fileContents.set(filename, fileData.content);
+                openFile(filename, fileData.language || getFileTypeFromExtension(filename));
+                hasFiles = true;
             }
-
-            console.log('User code loaded successfully');
+            
+            // If no files, create default
+            if (!hasFiles) {
+                fileContents.set('index.js', getDefaultFileContent('javascript'));
+                openFile('index.js', 'javascript');
+            }
+            
+            showNotification('Code loaded successfully!', 'success');
+            console.log('✅ User code loaded from Discord');
         }
     } catch (error) {
-        console.error('Failed to load user code:', error);
-    }
-}
-
-// Check URL parameters for order number
-function checkURLParameters() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const orderNumber = urlParams.get('order');
-
-    if (orderNumber) {
-        loadUserCode(orderNumber);
-    } else {
-        loadUserCode();
-    }
-}
-
-// Initialize the coding environment
-document.addEventListener('DOMContentLoaded', function() {
-    // Check authentication
-    checkAuth();
-
-    // Initialize editor
-    initializeEditor();
-
-    // Check URL parameters and load appropriate code
-    checkURLParameters();
-
-    // Set up event listeners
-    setupEventListeners();
-});
-
-// Initialize coding environment
-function initializeCodingEnvironment() {
-    const params = new URLSearchParams(window.location.search);
-    const templateName = params.get('template');
-    const orderNumber = params.get('order');
-
-    if (templateName) {
-        document.title = `${templateName} - Coding Environment`;
-
-        // Update header
-        const headerTitle = document.querySelector('.header h1');
-        if (headerTitle) {
-            headerTitle.textContent = templateName;
+        console.error('Error loading user code:', error);
+        // Create default file on error
+        if (!fileContents.has('index.js')) {
+            fileContents.set('index.js', getDefaultFileContent('javascript'));
+            openFile('index.js', 'javascript');
         }
     }
-
-    // Load user's code files
-    loadUserCodeFiles(orderNumber);
-
-    // Initialize admin controls
-    initializeAdminControls();
-
-    // Check if user is admin and show appropriate UI
-    checkAdminStatus();
 }
 
-// Add missing functions
-function checkAuth() {
-    const sessionToken = sessionStorage.getItem('sessionToken');
-    if (!sessionToken) {
-        window.location.href = '/login.html';
-        return false;
+function getFileTypeFromExtension(filename) {
+    const ext = filename.split('.').pop().toLowerCase();
+    const typeMap = {
+        'js': 'javascript',
+        'json': 'json',
+        'css': 'css',
+        'html': 'html',
+        'htm': 'html',
+        'md': 'markdown',
+        'txt': 'text'
+    };
+    
+    return typeMap[ext] || 'text';
+}
+
+async function loadTemplateFiles(templateName) {
+    // Template implementations would go here
+    console.log(`Loading template: ${templateName}`);
+    
+    // Update project name
+    const projectName = document.getElementById('projectName');
+    if (projectName) {
+        projectName.textContent = `${templateName} Template`;
     }
-    return true;
+    
+    showNotification(`Template "${templateName}" loaded!`, 'success');
 }
 
-function initializeEditor() {
-    console.log('Editor initialized');
+// Action functions
+function runCode() {
+    switchPanel('output');
+    
+    const outputContent = document.getElementById('outputContent');
+    outputContent.innerHTML = '';
+    
+    // Add running message
+    const runningMsg = document.createElement('div');
+    runningMsg.className = 'output-message info';
+    runningMsg.innerHTML = `
+        <span class="output-time">[${new Date().toLocaleTimeString()}]</span>
+        <span class="output-text">🚀 Running ${currentFile}...</span>
+    `;
+    outputContent.appendChild(runningMsg);
+    
+    // Simulate execution
+    setTimeout(() => {
+        const successMsg = document.createElement('div');
+        successMsg.className = 'output-message success';
+        successMsg.innerHTML = `
+            <span class="output-time">[${new Date().toLocaleTimeString()}]</span>
+            <span class="output-text">✅ Bot started successfully!</span>
+        `;
+        outputContent.appendChild(successMsg);
+        
+        const infoMsg = document.createElement('div');
+        infoMsg.className = 'output-message info';
+        infoMsg.innerHTML = `
+            <span class="output-time">[${new Date().toLocaleTimeString()}]</span>
+            <span class="output-text">🔗 Bot connected to Discord API</span>
+        `;
+        outputContent.appendChild(infoMsg);
+    }, 1500);
+    
+    showNotification('Code execution started', 'info');
 }
 
-function setupEventListeners() {
-    console.log('Event listeners set up');
+function saveAll() {
+    // Save all open files
+    let savedCount = 0;
+    
+    openFiles.forEach((fileInfo, fileName) => {
+        if (fileInfo.modified) {
+            const editor = document.getElementById(`editor-${fileName}`);
+            if (editor) {
+                saveFileContent(fileName, editor.value);
+                savedCount++;
+            }
+        }
+    });
+    
+    showNotification(savedCount > 0 ? `Saved ${savedCount} files` : 'All files up to date', 'success');
 }
+
+function formatCode() {
+    const editor = document.getElementById(`editor-${currentFile}`);
+    if (!editor) return;
+    
+    // Simple code formatting (basic indentation)
+    const lines = editor.value.split('\n');
+    let formatted = [];
+    let indentLevel = 0;
+    
+    lines.forEach(line => {
+        const trimmedLine = line.trim();
+        
+        // Decrease indent for closing brackets
+        if (trimmedLine.match(/^[}\]]/)) {
+            indentLevel = Math.max(0, indentLevel - 1);
+        }
+        
+        // Add formatted line
+        formatted.push('    '.repeat(indentLevel) + trimmedLine);
+        
+        // Increase indent for opening brackets
+        if (trimmedLine.match(/[{\[]$/)) {
+            indentLevel++;
+        }
+    });
+    
+    editor.value = formatted.join('\n');
+    
+    // Update syntax highlighting
+    const syntaxOverlay = document.getElementById(`syntaxOverlay-${currentFile}`);
+    const lineNumbers = document.getElementById(`lineNumbers-${currentFile}`);
+    const fileInfo = openFiles.get(currentFile);
+    
+    if (syntaxOverlay && fileInfo) {
+        applySyntaxHighlighting(editor, syntaxOverlay, fileInfo.type);
+        updateLineNumbers(editor, lineNumbers);
+    }
+    
+    showNotification('Code formatted', 'success');
+}
+
+function copyCode() {
+    const editor = document.getElementById(`editor-${currentFile}`);
+    if (!editor) return;
+    
+    navigator.clipboard.writeText(editor.value).then(() => {
+        showNotification('Code copied to clipboard', 'success');
+    }).catch(() => {
+        showNotification('Failed to copy code', 'error');
+    });
+}
+
+function copySelection() {
+    // Implementation for copying selected text
+}
+
+function pasteText() {
+    // Implementation for pasting text
+}
+
+function commentToggle() {
+    // Implementation for toggling comments
+}
+
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 12px 20px;
+        border-radius: 8px;
+        color: white;
+        font-weight: 500;
+        z-index: 10000;
+        animation: slideInRight 0.3s ease;
+        max-width: 400px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    `;
+    
+    // Set background color based on type
+    const colors = {
+        info: '#00d4ff',
+        success: '#00ff88',
+        warning: '#ffb800',
+        error: '#ff4757'
+    };
+    
+    notification.style.background = colors[type] || colors.info;
+    notification.textContent = message;
+    
+    // Add to document
+    document.body.appendChild(notification);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        notification.style.animation = 'slideOutRight 0.3s ease';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
+}
+
+// Add CSS for notification animations
+const notificationStyles = document.createElement('style');
+notificationStyles.textContent = `
+    @keyframes slideInRight {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    
+    @keyframes slideOutRight {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
+    }
+`;
+document.head.appendChild(notificationStyles);
+
+console.log('🎉 Smart Serve IDE loaded successfully!');

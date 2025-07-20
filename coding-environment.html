@@ -7,171 +7,331 @@
     <title>Coding Environment - Smart Serve</title>
     <link href="coding-environment.css" rel="stylesheet" type="text/css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-html.min.js"></script>
 </head>
 <body>
-    <!-- Home Icon -->
-    <div class="home-icon" onclick="window.location.href='index.html'">
-        <i class="fas fa-home"></i>
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-animation">
+            <div class="code-blocks">
+                <div class="code-block" style="animation-delay: 0s;">const</div>
+                <div class="code-block" style="animation-delay: 0.1s;">function</div>
+                <div class="code-block" style="animation-delay: 0.2s;">async</div>
+                <div class="code-block" style="animation-delay: 0.3s;">await</div>
+            </div>
+            <div class="loading-text">Loading Smart Serve IDE...</div>
+            <div class="progress-bar">
+                <div class="progress-fill"></div>
+            </div>
+        </div>
     </div>
 
-    <!-- Files Sidebar Toggle -->
-    <div class="sidebar-toggle" onclick="toggleSidebar()">
-        <i class="fas fa-bars"></i>
-    </div>
-
-    <!-- Files Sidebar -->
-    <div class="files-sidebar" id="filesSidebar">
-        <div class="sidebar-header">
-            <h3>Files</h3>
-            <button class="close-sidebar" onclick="toggleSidebar()">
-                <i class="fas fa-times"></i>
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div class="top-bar-left">
+            <div class="home-btn" onclick="window.location.href='index.html'">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+            </div>
+            <div class="breadcrumb">
+                <span class="breadcrumb-item">Smart Serve</span>
+                <i class="fas fa-chevron-right"></i>
+                <span class="breadcrumb-item active">Coding Environment</span>
+            </div>
+        </div>
+        <div class="top-bar-center">
+            <div class="project-name">
+                <i class="fas fa-code-branch"></i>
+                <span id="projectName">Discord Bot Project</span>
+            </div>
+        </div>
+        <div class="top-bar-right">
+            <button class="action-btn" onclick="runCode()">
+                <i class="fas fa-play"></i>
+                <span>Run</span>
             </button>
-        </div>
-        <div class="files-tree">
-            <div class="file-item" onclick="createNewFile()">
-                <i class="fas fa-plus"></i>
-                <span>New File</span>
-            </div>
-            <div class="file-item folder">
-                <i class="fas fa-folder"></i>
-                <span>src</span>
-            </div>
-            <div class="file-item">
-                <i class="fas fa-file-code"></i>
-                <span>index.js</span>
-            </div>
-            <div class="file-item">
-                <i class="fas fa-file-code"></i>
-                <span>bot.js</span>
-            </div>
-            <div class="file-item">
-                <i class="fas fa-file"></i>
-                <span>package.json</span>
-            </div>
-            <div class="file-item">
-                <i class="fas fa-file"></i>
-                <span>README.md</span>
+            <button class="action-btn secondary" onclick="saveAll()">
+                <i class="fas fa-save"></i>
+                <span>Save</span>
+            </button>
+            <div class="user-profile-mini">
+                <img src="https://via.placeholder.com/32x32/ffffff/000000?text=U" alt="Profile" id="userAvatarMini" />
             </div>
         </div>
     </div>
 
-    <!-- Main Content Area -->
-    <div class="main-content">
-        <!-- Left Section - AI Assistant -->
-        <div class="ai-section">
-            <div class="ai-header">
-                <h3><i class="fas fa-brain"></i> AI Assistant</h3>
+    <!-- Main IDE Layout -->
+    <div class="ide-container">
+        <!-- Left Sidebar - File Explorer -->
+        <div class="sidebar left-sidebar" id="fileSidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-title">
+                    <i class="fas fa-folder-open"></i>
+                    <span>Files</span>
+                </div>
+                <div class="sidebar-actions">
+                    <button class="sidebar-btn" onclick="createNewFile()" title="New File">
+                        <i class="fas fa-file-plus"></i>
+                    </button>
+                    <button class="sidebar-btn" onclick="createNewFolder()" title="New Folder">
+                        <i class="fas fa-folder-plus"></i>
+                    </button>
+                    <button class="sidebar-btn" onclick="refreshFiles()" title="Refresh">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
             </div>
-            <div class="ai-content">
-                <div class="coming-soon-ai">
-                    <div class="ai-animation">
-                        <div class="neural-network">
-                            <div class="node node-1"></div>
-                            <div class="node node-2"></div>
-                            <div class="node node-3"></div>
-                            <div class="connection connection-1"></div>
-                            <div class="connection connection-2"></div>
-                        </div>
+            <div class="file-tree" id="fileTree">
+                <div class="tree-item file" data-name="index.js" data-type="javascript">
+                    <div class="tree-item-content">
+                        <i class="fas fa-chevron-right tree-arrow"></i>
+                        <i class="fab fa-js-square file-icon js-icon"></i>
+                        <span class="file-name">index.js</span>
                     </div>
-                    <h3>Powerful AI Coming Soon!</h3>
-                    <p>Advanced AI assistance for code generation and debugging will be available soon.</p>
-                    <div class="ai-features">
-                        <div class="feature-item">
-                            <i class="fas fa-code"></i>
-                            <span>Smart Code Generation</span>
-                        </div>
-                        <div class="feature-item">
-                            <i class="fas fa-bug"></i>
-                            <span>Intelligent Debugging</span>
-                        </div>
-                        <div class="feature-item">
-                            <i class="fas fa-lightbulb"></i>
-                            <span>Code Optimization</span>
-                        </div>
+                </div>
+                <div class="tree-item file" data-name="package.json" data-type="json">
+                    <div class="tree-item-content">
+                        <i class="fas fa-chevron-right tree-arrow"></i>
+                        <i class="fas fa-file-code file-icon json-icon"></i>
+                        <span class="file-name">package.json</span>
                     </div>
-                    <div class="disabled-textbox">
-                        <textarea placeholder="AI assistance will be available here..." disabled></textarea>
+                </div>
+                <div class="tree-item file" data-name="README.md" data-type="markdown">
+                    <div class="tree-item-content">
+                        <i class="fas fa-chevron-right tree-arrow"></i>
+                        <i class="fab fa-markdown file-icon md-icon"></i>
+                        <span class="file-name">README.md</span>
+                    </div>
+                </div>
+                <div class="tree-item folder collapsed" data-name="src">
+                    <div class="tree-item-content">
+                        <i class="fas fa-chevron-right tree-arrow"></i>
+                        <i class="fas fa-folder file-icon folder-icon"></i>
+                        <span class="file-name">src</span>
+                    </div>
+                    <div class="tree-children">
+                        <div class="tree-item file" data-name="bot.js" data-type="javascript">
+                            <div class="tree-item-content">
+                                <i class="fas fa-chevron-right tree-arrow"></i>
+                                <i class="fab fa-js-square file-icon js-icon"></i>
+                                <span class="file-name">bot.js</span>
+                            </div>
+                        </div>
+                        <div class="tree-item file" data-name="config.json" data-type="json">
+                            <div class="tree-item-content">
+                                <i class="fas fa-chevron-right tree-arrow"></i>
+                                <i class="fas fa-file-code file-icon json-icon"></i>
+                                <span class="file-name">config.json</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Center Section - Code Editor -->
-        <div class="code-section">
-            <div class="tabs-container">
-                <div class="tab active" data-file="index.js">
-                    <span>index.js</span>
-                    <i class="fas fa-times tab-close"></i>
+        <!-- Sidebar Resize Handle -->
+        <div class="resize-handle" id="leftResizeHandle"></div>
+
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <!-- Tab Bar -->
+            <div class="tab-bar" id="tabBar">
+                <div class="tab active" data-file="index.js" data-type="javascript">
+                    <div class="tab-content">
+                        <i class="fab fa-js-square tab-icon"></i>
+                        <span class="tab-name">index.js</span>
+                        <button class="tab-close" onclick="closeTab('index.js')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
                 </div>
-                <div class="tab" data-file="bot.js">
-                    <span>bot.js</span>
-                    <i class="fas fa-times tab-close"></i>
-                </div>
-                <div class="tab" data-file="package.json">
-                    <span>package.json</span>
-                    <i class="fas fa-times tab-close"></i>
-                </div>
-                <div class="new-tab" onclick="createNewTab()">
+                <div class="tab-add" onclick="createNewFile()">
                     <i class="fas fa-plus"></i>
                 </div>
             </div>
-            <div class="editor-container">
-                <div class="editor-content active" data-file="index.js">
-                    <textarea class="code-editor" placeholder="// Add your JavaScript code here..."></textarea>
-                </div>
-                <div class="editor-content" data-file="bot.js">
-                    <textarea class="code-editor" placeholder="// Add your bot code here..."></textarea>
-                </div>
-                <div class="editor-content" data-file="package.json">
-                    <textarea class="code-editor" placeholder="// Add your package.json content here..."></textarea>
+
+            <!-- Editor Container -->
+            <div class="editor-container" id="editorContainer">
+                <div class="editor-panel active" data-file="index.js">
+                    <div class="editor-header">
+                        <div class="editor-info">
+                            <span class="editor-file-name">index.js</span>
+                            <span class="editor-file-path">~/Discord Bot Project/index.js</span>
+                        </div>
+                        <div class="editor-actions">
+                            <button class="editor-btn" onclick="formatCode()" title="Format Code">
+                                <i class="fas fa-code"></i>
+                            </button>
+                            <button class="editor-btn" onclick="copyCode()" title="Copy All">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="editor-content">
+                        <div class="line-numbers" id="lineNumbers">
+                            <div class="line-number">1</div>
+                        </div>
+                        <textarea 
+                            class="code-editor" 
+                            id="codeEditor" 
+                            spellcheck="false"
+                            autocomplete="off"
+                            placeholder="// Start coding here...&#10;// Your Discord bot code will appear here"
+                        ></textarea>
+                        <div class="syntax-overlay" id="syntaxOverlay"></div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Right Section - Console -->
-        <div class="console-section">
-            <div class="console-header">
-                <h3><i class="fas fa-terminal"></i> Console</h3>
+        <!-- Console Resize Handle -->
+        <div class="resize-handle horizontal" id="consoleResizeHandle"></div>
+
+        <!-- Bottom Panel - Console -->
+        <div class="bottom-panel" id="bottomPanel">
+            <div class="panel-header">
+                <div class="panel-tabs">
+                    <div class="panel-tab active" data-panel="terminal" onclick="switchPanel('terminal')">
+                        <i class="fas fa-terminal"></i>
+                        <span>Terminal</span>
+                    </div>
+                    <div class="panel-tab" data-panel="output" onclick="switchPanel('output')">
+                        <i class="fas fa-list-alt"></i>
+                        <span>Output</span>
+                    </div>
+                    <div class="panel-tab" data-panel="problems" onclick="switchPanel('problems')">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Problems</span>
+                        <span class="tab-badge">0</span>
+                    </div>
+                    <div class="panel-tab" data-panel="debug" onclick="switchPanel('debug')">
+                        <i class="fas fa-bug"></i>
+                        <span>Debug Console</span>
+                    </div>
+                </div>
+                <div class="panel-actions">
+                    <button class="panel-btn" onclick="clearConsole()" title="Clear">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    <button class="panel-btn" onclick="togglePanel()" title="Toggle Panel">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                </div>
             </div>
-            <div class="console-content">
-                <div class="coming-soon-console">
-                    <div class="console-animation">
-                        <div class="terminal-icon">
-                            <i class="fas fa-terminal"></i>
+            <div class="panel-content">
+                <!-- Terminal Panel -->
+                <div class="console-panel active" data-panel="terminal">
+                    <div class="terminal-output" id="terminalOutput">
+                        <div class="terminal-line">
+                            <span class="terminal-prefix">smartserve@discord-bot:~$</span>
+                            <span class="terminal-cursor">|</span>
                         </div>
                     </div>
-                    <h3>Console Coming Soon!</h3>
-                    <p>Interactive terminal and output console will be available soon.</p>
-                    <div class="console-preview">
-                        <div class="preview-line">$ npm install discord.js</div>
-                        <div class="preview-line">$ node bot.js</div>
-                        <div class="preview-line success">✓ Bot is online!</div>
-                        <div class="preview-cursor">|</div>
+                    <div class="terminal-input-container">
+                        <span class="terminal-prompt">smartserve@discord-bot:~$</span>
+                        <input type="text" class="terminal-input" id="terminalInput" placeholder="Enter command..." />
+                    </div>
+                </div>
+
+                <!-- Output Panel -->
+                <div class="console-panel" data-panel="output">
+                    <div class="output-content" id="outputContent">
+                        <div class="output-message info">
+                            <span class="output-time">[12:00:00]</span>
+                            <span class="output-text">Ready to run your code...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Problems Panel -->
+                <div class="console-panel" data-panel="problems">
+                    <div class="problems-content" id="problemsContent">
+                        <div class="no-problems">
+                            <i class="fas fa-check-circle"></i>
+                            <span>No problems detected</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Debug Panel -->
+                <div class="console-panel" data-panel="debug">
+                    <div class="debug-content" id="debugContent">
+                        <div class="debug-message">
+                            <span class="debug-time">[12:00:00]</span>
+                            <span class="debug-text">Debug console ready</span>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Admin Controls (only visible to admins) -->
-    <div class="admin-controls" id="adminControls" style="display: none;">
-        <div class="admin-panel">
-            <h3>Admin Controls</h3>
-            <div class="admin-actions">
-                <button class="admin-btn" onclick="saveTemplate()">
-                    <i class="fas fa-save"></i>
-                    Save Template
-                </button>
-                <button class="admin-btn" onclick="deployBot()">
-                    <i class="fas fa-rocket"></i>
-                    Deploy Bot
-                </button>
-                <button class="admin-btn" onclick="manageFiles()">
-                    <i class="fas fa-folder-open"></i>
-                    Manage Files
+    <!-- Context Menu -->
+    <div class="context-menu" id="contextMenu">
+        <div class="context-item" onclick="copySelection()">
+            <i class="fas fa-copy"></i>
+            <span>Copy</span>
+        </div>
+        <div class="context-item" onclick="pasteText()">
+            <i class="fas fa-paste"></i>
+            <span>Paste</span>
+        </div>
+        <div class="context-separator"></div>
+        <div class="context-item" onclick="formatCode()">
+            <i class="fas fa-code"></i>
+            <span>Format Code</span>
+        </div>
+        <div class="context-item" onclick="commentToggle()">
+            <i class="fas fa-comment"></i>
+            <span>Toggle Comment</span>
+        </div>
+    </div>
+
+    <!-- File Creation Modal -->
+    <div class="modal" id="fileModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create New File</h3>
+                <button class="modal-close" onclick="closeModal('fileModal')">
+                    <i class="fas fa-times"></i>
                 </button>
             </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="fileName">File Name</label>
+                    <input type="text" id="fileName" placeholder="e.g., script.js, style.css" />
+                </div>
+                <div class="form-group">
+                    <label for="fileType">File Type</label>
+                    <select id="fileType">
+                        <option value="javascript">JavaScript (.js)</option>
+                        <option value="json">JSON (.json)</option>
+                        <option value="css">CSS (.css)</option>
+                        <option value="html">HTML (.html)</option>
+                        <option value="markdown">Markdown (.md)</option>
+                        <option value="text">Text (.txt)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn secondary" onclick="closeModal('fileModal')">Cancel</button>
+                <button class="btn primary" onclick="createFile()">Create File</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auto-completion popup -->
+    <div class="autocomplete-popup" id="autocompletePopup">
+        <div class="autocomplete-item" data-value="console.log()">
+            <i class="fas fa-code"></i>
+            <span>console.log()</span>
         </div>
     </div>
 
