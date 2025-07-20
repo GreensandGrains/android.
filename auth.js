@@ -17,6 +17,17 @@ class AuthSystem {
     }
 
     init() {
+        // Don't run auth checks if we're in an iframe
+        if (window.self !== window.top) {
+            return;
+        }
+        
+        // Don't run auth checks during OAuth callback
+        if (sessionStorage.getItem('authComplete') === 'true') {
+            sessionStorage.removeItem('authComplete');
+            return;
+        }
+        
         this.checkPageAccess();
         this.setupSessionTimeout();
         this.addSecurityHeaders();
@@ -26,8 +37,14 @@ class AuthSystem {
     checkPageAccess() {
         const currentPage = window.location.pathname.split('/').pop() || 'index.html';
         
+        // Don't redirect if we're already on the login page
+        if (currentPage === this.loginPage) {
+            return;
+        }
+        
         if (this.protectedPages.includes(currentPage)) {
             if (!this.isAuthenticated()) {
+                console.log('User not authenticated, redirecting to login');
                 this.redirectToLogin();
                 return;
             }
@@ -41,30 +58,58 @@ class AuthSystem {
         
         // If user is logged in and tries to access login page, redirect to dashboard
         if (currentPage === this.loginPage && this.isAuthenticated()) {
-            window.location.href = 'bot-builder.html';
+            try {
+                window.location.replace('bot-builder.html');
+            } catch (error) {
+                window.location.href = 'bot-builder.html';
+            }
         }
     }
 
     // Check if user is authenticated
     isAuthenticated() {
-        const userData = localStorage.getItem('userData');
-        const sessionToken = sessionStorage.getItem('sessionToken');
-        const loginTimestamp = localStorage.getItem('loginTimestamp');
-        
-        if (!userData || !sessionToken || !loginTimestamp) {
+        try {
+            const userData = localStorage.getItem('userData');
+            const sessionToken = sessionStorage.getItem('sessionToken');
+            const loginTimestamp = localStorage.getItem('loginTimestamp');
+            
+            console.log('Auth check:', { 
+                hasUserData: !!userData, 
+                hasSessionToken: !!sessionToken, 
+                hasLoginTimestamp: !!loginTimestamp 
+            });
+            
+            if (!userData || !sessionToken || !loginTimestamp) {
+                console.log('Missing auth data');
+                return false;
+            }
+
+            // Parse and validate user data
+            const user = JSON.parse(userData);
+            if (!user.id || !user.username) {
+                console.log('Invalid user data structure');
+                return false;
+            }
+
+            // Check if session is still valid (24 hours)
+            const sessionAge = Date.now() - parseInt(loginTimestamp);
+            const sessionTimeout = 24 * 60 * 60 * 1000; // 24 hours
+            
+            if (sessionAge > sessionTimeout) {
+                console.log('Session expired');
+                this.logout('Session expired');
+                return false;
+            }
+
+            console.log('User authenticated successfully');
+            return true;
+        } catch (error) {
+            console.error('Authentication check error:', error);
+            // Clear corrupted data
+            localStorage.removeItem('userData');
+            sessionStorage.clear();
             return false;
         }
-
-        // Check if session is still valid (24 hours)
-        const sessionAge = Date.now() - parseInt(loginTimestamp);
-        const sessionTimeout = 24 * 60 * 60 * 1000; // 24 hours
-        
-        if (sessionAge > sessionTimeout) {
-            this.logout('Session expired');
-            return false;
-        }
-
-        return true;
     }
 
     // Validate session integrity
@@ -106,23 +151,41 @@ class AuthSystem {
 
     // Handle successful login
     handleLogin(userData, rememberMe = false) {
-        const loginTimestamp = Date.now().toString();
-        const sessionToken = this.generateSessionToken(userData.id);
-        
-        // Store user data
-        localStorage.setItem('userData', JSON.stringify(userData));
-        localStorage.setItem('loginTimestamp', loginTimestamp);
-        sessionStorage.setItem('sessionToken', sessionToken);
-        
-        if (rememberMe) {
-            localStorage.setItem('rememberMe', 'true');
-        }
+        try {
+            const loginTimestamp = Date.now().toString();
+            const sessionToken = this.generateSessionToken(userData.id);
+            
+            // Clear any existing auth data first
+            this.clearAuthData();
+            
+            // Store user data
+            localStorage.setItem('userData', JSON.stringify(userData));
+            localStorage.setItem('loginTimestamp', loginTimestamp);
+            sessionStorage.setItem('sessionToken', sessionToken);
+            
+            if (rememberMe) {
+                localStorage.setItem('rememberMe', 'true');
+            }
 
-        // Log security event
-        this.logSecurityEvent('login', userData.id);
-        
-        // Redirect to dashboard
-        window.location.href = 'bot-builder.html';
+            // Log security event
+            this.logSecurityEvent('login', userData.id);
+            
+            console.log('Login successful, redirecting to bot-builder');
+            
+            // Redirect to dashboard
+            window.location.href = 'bot-builder.html';
+        } catch (error) {
+            console.error('Error in handleLogin:', error);
+            this.showNotification('Login error occurred', 'error');
+        }
+    }
+
+    // Clear authentication data
+    clearAuthData() {
+        localStorage.removeItem('userData');
+        localStorage.removeItem('loginTimestamp');
+        localStorage.removeItem('rememberMe');
+        sessionStorage.clear();
     }
 
     // Handle logout
@@ -162,7 +225,14 @@ class AuthSystem {
     redirectToLogin() {
         const currentPage = window.location.pathname + window.location.search;
         sessionStorage.setItem('redirectAfterLogin', currentPage);
-        window.location.href = this.loginPage;
+        
+        // Use replace instead of href to avoid security issues
+        try {
+            window.location.replace(this.loginPage);
+        } catch (error) {
+            // Fallback for iframe or security restrictions
+            window.top.location.href = this.loginPage;
+        }
     }
 
     // Setup automatic session timeout
@@ -348,9 +418,14 @@ class AuthSystem {
     }
 }
 
-// Initialize authentication system
-const authSystem = new AuthSystem();
+// Initialize authentication system after DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Small delay to ensure all scripts are loaded
+    setTimeout(() => {
+        const authSystem = new AuthSystem();
+        window.authSystem = authSystem;
+    }, 100);
+});
 
-// Export for use in other files
-window.authSystem = authSystem;
+// AuthSystem will be exported in the DOMContentLoaded handler above
 

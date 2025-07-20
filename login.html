@@ -114,5 +114,54 @@
     </div>
 
     <script src="login.js"></script>
+    <script>
+        // Check for auth errors in URL parameters
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const error = urlParams.get('error');
+
+            if (error) {
+                let errorMessage = 'Authentication failed. Please try again.';
+
+                switch(error) {
+                    case 'invalid_request':
+                        errorMessage = 'Invalid authentication request. Please try again.';
+                        break;
+                    case 'auth_failed':
+                        errorMessage = 'Authentication failed. Please check your Discord settings and try again.';
+                        break;
+                    default:
+                        errorMessage = 'Authentication error occurred. Please try again.';
+                }
+
+                // Show error message
+                const errorDiv = document.createElement('div');
+                errorDiv.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: rgba(239, 68, 68, 0.9);
+                    color: white;
+                    padding: 15px 25px;
+                    border-radius: 8px;
+                    z-index: 9999;
+                    font-weight: 500;
+                `;
+                errorDiv.textContent = errorMessage;
+                document.body.appendChild(errorDiv);
+
+                // Remove error from URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+
+                // Auto-remove error message
+                setTimeout(() => {
+                    if (document.body.contains(errorDiv)) {
+                        errorDiv.remove();
+                    }
+                }, 5000);
+            }
+        });
+    </script>
 </body>
 </html>

@@ -16,8 +16,8 @@ discordBot.start().catch(console.error);
 
 // Discord OAuth configuration
 const DISCORD_CLIENT_ID = '1372226433191247983';
-const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET || 'JQFKvaPblr4uXrbZZoU6YUuFR3uihpIa';
-const DISCORD_REDIRECT_URI = `${process.env.REPL_URL || 'https://android-m682.onrender.com'}/auth/discord/callback`;
+const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET || '0GVe7ht4W-R1wMxxkq-mFBC1-CbpnD9E';
+const DISCORD_REDIRECT_URI = `${process.env.REPL_URL || 'http://localhost:5000'}/auth/discord/callback`;
 
 // Store sessions in memory (use Redis/database in production)
 const sessions = new Map();
@@ -158,30 +158,45 @@ app.get('/auth/discord/callback', async (req, res) => {
                     <p>Redirecting to Bot Builder...</p>
                 </div>
                 <script>
-                    // Add role and permissions for client-side auth
-                    const userData = ${JSON.stringify(user)};
-                    userData.role = userData.role || 'free';
-                    userData.permissions = userData.permissions || ['view_templates', 'create_basic_bot'];
+                    try {
+                        // Add role and permissions for client-side auth
+                        const userData = ${JSON.stringify(user)};
+                        userData.role = userData.role || 'free';
+                        userData.permissions = userData.permissions || ['view_templates', 'create_basic_bot'];
 
-                   // Set authentication data immediately
+                        // Clear any existing auth data first
+                        localStorage.removeItem('userData');
+                        localStorage.removeItem('loginTimestamp');
+                        sessionStorage.clear();
 
-                    localStorage.setItem('userData', JSON.stringify(userData));
-                    localStorage.setItem('loginTimestamp', '${Date.now()}');
+                        // Set authentication data
+                        localStorage.setItem('userData', JSON.stringify(userData));
+                        localStorage.setItem('loginTimestamp', '${Date.now()}');
 
-                    // Generate client-side compatible session token
-                    const secret = 'smart-serve-secret-key';
-                    const timestamp = '${Date.now()}';
-                    const clientSessionToken = btoa(userData.id + secret + timestamp).slice(0, 32);
-                    sessionStorage.setItem('sessionToken', clientSessionToken);
+                        // Generate client-side compatible session token
+                        const secret = 'smart-serve-secret-key';
+                        const timestamp = '${Date.now()}';
+                        const clientSessionToken = btoa(userData.id + secret + timestamp).slice(0, 32);
+                        sessionStorage.setItem('sessionToken', clientSessionToken);
 
-                    // Set server session token for API calls
-                    sessionStorage.setItem('serverSessionToken', '${sessionId}');
+                        // Set server session token for API calls
+                        sessionStorage.setItem('serverSessionToken', '${sessionId}');
 
-                    // Mark authentication as complete to prevent auth.js from interfering
-                    sessionStorage.setItem('authComplete', 'true');
+                        // Mark authentication as complete to prevent auth.js from interfering
+                        sessionStorage.setItem('authComplete', 'true');
 
-                    // Immediate redirect without delay
-                    window.location.replace('bot-builder.html');
+                        console.log('Auth data set successfully');
+
+                        // Redirect after a short delay to ensure data is saved
+                        setTimeout(() => {
+                            window.location.replace('/bot-builder.html');
+                        }, 500);
+
+                    } catch (error) {
+                        console.error('Error during authentication setup:', error);
+                        alert('Authentication error. Please try logging in again.');
+                        window.location.href = '/login.html';
+                    }
                 </script>
             </body>
             </html>

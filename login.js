@@ -22,16 +22,12 @@ function togglePassword() {
 
 // Handle Discord login
 function handleDiscordLogin() {
-    const discordBtn = document.querySelector('.discord-btn');
-    discordBtn.style.opacity = '0.7';
-    discordBtn.style.pointerEvents = 'none';
-
-    // Simulate Discord OAuth flow
+    showLoadingState('Redirecting to Discord...');
+    
+    // Redirect to server-side Discord OAuth endpoint
     setTimeout(() => {
-        alert('Discord login integration would be implemented here with Discord OAuth 2.0');
-        discordBtn.style.opacity = '1';
-        discordBtn.style.pointerEvents = 'auto';
-    }, 1500);
+        window.location.href = '/auth/discord';
+    }, 1000);
 }
 
 // Handle Smars login
@@ -224,19 +220,47 @@ function showSuccessState(message) {
 
 // Handle successful login
 function handleSuccessfulLogin(user) {
-    const rememberMe = document.getElementById('remember')?.checked || false;
+    try {
+        const rememberMe = document.getElementById('remember')?.checked || false;
 
-    // Add role and permissions
-    user.role = user.role || 'free';
-    user.permissions = user.permissions || ['view_templates', 'create_basic_bot'];
+        // Add role and permissions
+        user.role = user.role || 'free';
+        user.permissions = user.permissions || ['view_templates', 'create_basic_bot'];
 
-    // Use auth system to handle login
-    if (window.authSystem) {
-        window.authSystem.handleLogin(user, rememberMe);
-    } else {
-        // Fallback if auth system not loaded
+        console.log('Handling successful login for user:', user.username);
+
+        // Clear any existing auth data first
+        localStorage.removeItem('userData');
+        localStorage.removeItem('loginTimestamp');
+        sessionStorage.clear();
+
+        // Set new auth data
+        const loginTimestamp = Date.now().toString();
         localStorage.setItem('userData', JSON.stringify(user));
-        window.location.href = 'bot-builder.html';
+        localStorage.setItem('loginTimestamp', loginTimestamp);
+
+        // Generate session token
+        const secret = 'smart-serve-secret-key';
+        const sessionToken = btoa(user.id + secret + loginTimestamp).slice(0, 32);
+        sessionStorage.setItem('sessionToken', sessionToken);
+
+        if (rememberMe) {
+            localStorage.setItem('rememberMe', 'true');
+        }
+
+        console.log('Auth data set, redirecting...');
+
+        // Show success and redirect
+        showSuccessState('Login successful! Redirecting...');
+        
+        setTimeout(() => {
+            window.location.href = 'bot-builder.html';
+        }, 1000);
+
+    } catch (error) {
+        console.error('Error in handleSuccessfulLogin:', error);
+        alert('Login error occurred. Please try again.');
+        window.location.reload();
     }
 }
 
