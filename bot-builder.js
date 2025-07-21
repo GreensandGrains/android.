@@ -47,13 +47,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Initialize order form functionality
 function initializeOrderForm() {
-    const makeOrderBtn = document.getElementById('make-order-btn');
+    const sendBtn = document.getElementById('send-btn');
     const aiCreateBtn = document.getElementById('ai-create-btn');
+    const fileUpload = document.getElementById('file-upload');
     const popupOverlay = document.getElementById('popup-overlay');
     const popupClose = document.getElementById('popup-close');
 
-    if (makeOrderBtn) {
-        makeOrderBtn.addEventListener('click', handleMakeOrder);
+    if (sendBtn) {
+        sendBtn.addEventListener('click', handleSendMessage);
+    }
+
+    if (fileUpload) {
+        fileUpload.addEventListener('change', handleFileUpload);
     }
 
     if (aiCreateBtn) {
@@ -261,54 +266,127 @@ function handleLogout() {
     }
 }
 
-// Handle make order button click
-async function handleMakeOrder() {
-    const content = document.getElementById('bot-content').value.trim();
+let attachedFiles = [];
 
-    if (!content) {
-        alert('Please enter bot content before making an order.');
+// Handle send button click
+function handleSendMessage() {
+    const content = document.getElementById('bot-content').value.trim();
+    
+    if (!content && attachedFiles.length === 0) {
+        showNotification('Please enter a description or attach files', 'warning');
         return;
     }
 
-    const makeOrderBtn = document.getElementById('make-order-btn');
-    const originalText = makeOrderBtn.innerHTML;
+    // Create project with AI chat
+    const projectData = {
+        id: 'ai_project_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+        name: 'AI Bot Project',
+        description: content,
+        files: attachedFiles,
+        type: 'ai-chat',
+        createdAt: Date.now()
+    };
 
-    try {
-        // Show loading state
-        makeOrderBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-        makeOrderBtn.disabled = true;
+    // Save project
+    localStorage.setItem(`project_${projectData.id}`, JSON.stringify(projectData));
 
-        const sessionToken = sessionStorage.getItem('serverSessionToken');
-        if (!sessionToken) {
-            throw new Error('No session token found');
+    // Redirect to coding environment with AI chat
+    const params = new URLSearchParams({
+        project: projectData.id,
+        type: 'ai-chat',
+        description: encodeURIComponent(content),
+        files: attachedFiles.length
+    });
+
+    window.location.href = `coding-environment.html?${params.toString()}`;
+}
+
+// Handle file upload
+function handleFileUpload(event) {
+    const files = Array.from(event.target.files);
+    const attachedFilesContainer = document.getElementById('attached-files');
+
+    files.forEach(file => {
+        if (file.size > 10 * 1024 * 1024) { // 10MB limit
+            showNotification(`File "${file.name}" is too large (max 10MB)`, 'error');
+            return;
         }
 
-        const response = await fetch('/api/order', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${sessionToken}`
-            },
-            body: JSON.stringify({ content })
-        });
+        const fileObj = {
+            id: Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            file: file
+        };
 
-        const result = await response.json();
+        attachedFiles.push(fileObj);
+        displayAttachedFile(fileObj);
+    });
 
-        if (response.ok) {
-            alert('Order submitted successfully! Check your Discord DMs for confirmation.');
-            document.getElementById('bot-content').value = '';
-            loadUserOrders(); // Refresh order count
-        } else {
-            throw new Error(result.error || 'Failed to submit order');
-        }
-    } catch (error) {
-        console.error('Order submission error:', error);
-        alert('Failed to submit order. Please ensure your Discord DMs are enabled.');
-    } finally {
-        // Restore button state
-        makeOrderBtn.innerHTML = originalText;
-        makeOrderBtn.disabled = false;
+    if (attachedFiles.length > 0) {
+        attachedFilesContainer.style.display = 'block';
     }
+
+    // Clear input
+    event.target.value = '';
+}
+
+// Display attached file
+function displayAttachedFile(fileObj) {
+    const attachedFilesContainer = document.getElementById('attached-files');
+    
+    const fileElement = document.createElement('div');
+    fileElement.className = 'attached-file';
+    fileElement.dataset.fileId = fileObj.id;
+    
+    const iconClass = getFileIcon(fileObj.type);
+    const fileSize = formatFileSize(fileObj.size);
+    
+    fileElement.innerHTML = `
+        <i class="${iconClass} file-icon"></i>
+        <span class="file-name">${fileObj.name}</span>
+        <span class="file-size">${fileSize}</span>
+        <button class="remove-file" onclick="removeAttachedFile('${fileObj.id}')">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    attachedFilesContainer.appendChild(fileElement);
+}
+
+// Remove attached file
+function removeAttachedFile(fileId) {
+    attachedFiles = attachedFiles.filter(file => file.id !== fileId);
+    
+    const fileElement = document.querySelector(`[data-file-id="${fileId}"]`);
+    if (fileElement) {
+        fileElement.remove();
+    }
+    
+    if (attachedFiles.length === 0) {
+        document.getElementById('attached-files').style.display = 'none';
+    }
+}
+
+// Get file icon based on type
+function getFileIcon(type) {
+    if (type.startsWith('image/')) return 'fas fa-image';
+    if (type.startsWith('video/')) return 'fas fa-video';
+    if (type.includes('python')) return 'fab fa-python';
+    if (type.includes('javascript')) return 'fab fa-js-square';
+    if (type.includes('json')) return 'fas fa-code';
+    if (type.includes('text')) return 'fas fa-file-alt';
+    return 'fas fa-file';
+}
+
+// Format file size
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
 // Navigation functions for sidebar

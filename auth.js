@@ -1,5 +1,3 @@
-
-
 // Authentication Security System
 class AuthSystem {
     constructor() {
@@ -21,13 +19,13 @@ class AuthSystem {
         if (window.self !== window.top) {
             return;
         }
-        
+
         // Don't run auth checks during OAuth callback
         if (sessionStorage.getItem('authComplete') === 'true') {
             sessionStorage.removeItem('authComplete');
             return;
         }
-        
+
         this.checkPageAccess();
         this.setupSessionTimeout();
         this.addSecurityHeaders();
@@ -36,26 +34,27 @@ class AuthSystem {
     // Check if current page requires authentication
     checkPageAccess() {
         const currentPage = window.location.pathname.split('/').pop() || 'index.html';
-        
+        const isAuthenticated = this.isAuthenticated();
+
         // Don't redirect if we're already on the login page
         if (currentPage === this.loginPage) {
             return;
         }
-        
+
         if (this.protectedPages.includes(currentPage)) {
             if (!this.isAuthenticated()) {
                 console.log('User not authenticated, redirecting to login');
                 this.redirectToLogin();
                 return;
             }
-            
+
             // Additional security checks for authenticated users
             if (!this.validateSession()) {
                 this.logout('Session expired');
                 return;
             }
         }
-        
+
         // If user is logged in and tries to access login page, redirect to dashboard
         if (currentPage === this.loginPage && this.isAuthenticated()) {
             try {
@@ -72,13 +71,13 @@ class AuthSystem {
             const userData = localStorage.getItem('userData');
             const sessionToken = sessionStorage.getItem('sessionToken');
             const loginTimestamp = localStorage.getItem('loginTimestamp');
-            
+
             console.log('Auth check:', { 
                 hasUserData: !!userData, 
                 hasSessionToken: !!sessionToken, 
                 hasLoginTimestamp: !!loginTimestamp 
             });
-            
+
             if (!userData || !sessionToken || !loginTimestamp) {
                 console.log('Missing auth data');
                 return false;
@@ -94,7 +93,7 @@ class AuthSystem {
             // Check if session is still valid (7 days)
             const sessionAge = Date.now() - parseInt(loginTimestamp);
             const sessionTimeout = 7 * 24 * 60 * 60 * 1000; // 7 days
-            
+
             if (sessionAge > sessionTimeout) {
                 console.log('Session expired');
                 this.logout('Session expired');
@@ -117,7 +116,7 @@ class AuthSystem {
         try {
             const userData = JSON.parse(localStorage.getItem('userData'));
             const sessionToken = sessionStorage.getItem('sessionToken');
-            
+
             // Basic validation - in production, this would be server-side
             if (!userData.id || !userData.username || !sessionToken) {
                 return false;
@@ -154,24 +153,24 @@ class AuthSystem {
         try {
             const loginTimestamp = Date.now().toString();
             const sessionToken = this.generateSessionToken(userData.id);
-            
+
             // Clear any existing auth data first
             this.clearAuthData();
-            
+
             // Store user data
             localStorage.setItem('userData', JSON.stringify(userData));
             localStorage.setItem('loginTimestamp', loginTimestamp);
             sessionStorage.setItem('sessionToken', sessionToken);
-            
+
             if (rememberMe) {
                 localStorage.setItem('rememberMe', 'true');
             }
 
             // Log security event
             this.logSecurityEvent('login', userData.id);
-            
+
             console.log('Login successful, redirecting to bot-builder');
-            
+
             // Redirect to dashboard
             window.location.href = 'bot-builder.html';
         } catch (error) {
@@ -195,7 +194,7 @@ class AuthSystem {
             try {
                 const user = JSON.parse(userData);
                 this.logSecurityEvent('logout', user.id, reason);
-                
+
                 // Call server logout if we have a server session
                 const serverSessionToken = sessionStorage.getItem('serverSessionToken');
                 if (serverSessionToken) {
@@ -216,7 +215,7 @@ class AuthSystem {
         localStorage.removeItem('loginTimestamp');
         localStorage.removeItem('rememberMe');
         sessionStorage.clear();
-        
+
         // Redirect to login page
         window.location.href = 'index.html';
     }
@@ -225,7 +224,7 @@ class AuthSystem {
     redirectToLogin() {
         const currentPage = window.location.pathname + window.location.search;
         sessionStorage.setItem('redirectAfterLogin', currentPage);
-        
+
         // Use replace instead of href to avoid security issues
         try {
             window.location.replace(this.loginPage);
@@ -240,12 +239,12 @@ class AuthSystem {
         let timeoutId;
         let warningShown = false;
         let lastActivity = Date.now();
-        
+
         const resetTimeout = () => {
             clearTimeout(timeoutId);
             warningShown = false;
             lastActivity = Date.now();
-            
+
             // Show warning 5 minutes before timeout (23 hours instead of 23 minutes)
             timeoutId = setTimeout(() => {
                 if (this.isAuthenticated() && !warningShown && (Date.now() - lastActivity) > (23 * 60 * 60 * 1000)) {
@@ -290,7 +289,7 @@ class AuthSystem {
         `;
 
         document.body.appendChild(modal);
-        
+
         // Auto-logout after 5 minutes if no action taken
         setTimeout(() => {
             if (document.body.contains(modal)) {
@@ -305,10 +304,10 @@ class AuthSystem {
         if (modal) {
             modal.remove();
         }
-        
+
         // Update login timestamp
         localStorage.setItem('loginTimestamp', Date.now().toString());
-        
+
         // Show success message
         this.showNotification('Session extended successfully', 'success');
     }
@@ -356,12 +355,12 @@ class AuthSystem {
         // Store in localStorage for demo (in production, send to server)
         const logs = JSON.parse(localStorage.getItem('securityLogs') || '[]');
         logs.push(securityLog);
-        
+
         // Keep only last 100 logs
         if (logs.length > 100) {
             logs.splice(0, logs.length - 100);
         }
-        
+
         localStorage.setItem('securityLogs', JSON.stringify(logs));
         console.log('Security Event:', securityLog);
     }
@@ -393,7 +392,7 @@ class AuthSystem {
     // Get current user data
     getCurrentUser() {
         if (!this.isAuthenticated()) return null;
-        
+
         try {
             return JSON.parse(localStorage.getItem('userData'));
         } catch (error) {
@@ -407,14 +406,14 @@ class AuthSystem {
     hasPermission(permission) {
         const user = this.getCurrentUser();
         if (!user) return false;
-        
+
         // Basic role-based permissions
         const permissions = {
             'free': ['view_templates', 'create_basic_bot'],
             'pro': ['view_templates', 'create_basic_bot', 'create_advanced_bot', 'export_bot'],
             'enterprise': ['view_templates', 'create_basic_bot', 'create_advanced_bot', 'export_bot', 'team_management', 'analytics']
         };
-        
+
         const userRole = user.role || 'free';
         return permissions[userRole]?.includes(permission) || false;
     }
@@ -455,4 +454,3 @@ document.addEventListener('DOMContentLoaded', function() {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { AuthSystem };
 }
-

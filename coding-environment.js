@@ -51,6 +51,7 @@ main();
 // Initialize the IDE
 document.addEventListener('DOMContentLoaded', function() {
     initializeIDE();
+    initializeAIAssistant();
 });
 
 async function initializeIDE() {
@@ -1144,6 +1145,7 @@ async function downloadProject() {
 async function loadProject(projectId) {
     try {
         let projectData = null;
+        const urlParams = new URLSearchParams(window.location.search);
 
         // Try to load from server first
         const sessionToken = sessionStorage.getItem('sessionToken');
@@ -1179,8 +1181,13 @@ async function loadProject(projectId) {
 
             updateProjectName();
 
+            // Check if this is an AI chat project
+            const projectType = urlParams.get('type');
+            if (projectType === 'ai-chat') {
+                await setupAIChatEnvironment(urlParams.get('description'), urlParams.get('files'));
+            }
+
             // Check if this is a moderation template
-            const urlParams = new URLSearchParams(window.location.search);
             const template = urlParams.get('template');
             const commands = urlParams.get('commands');
             
@@ -1208,6 +1215,43 @@ async function loadProject(projectId) {
         console.error('Error loading project:', error);
         showNotification('Failed to load project', 'error');
     }
+}
+
+// Setup AI chat environment
+async function setupAIChatEnvironment(description, filesCount) {
+    // Add AI chat panel to sidebar
+    const sidebar = document.querySelector('.sidebar');
+    
+    const aiChatSection = document.createElement('div');
+    aiChatSection.className = 'ai-chat-section';
+    aiChatSection.innerHTML = `
+        <div class="section-header">
+            <i class="fas fa-robot"></i>
+            <span>AI Assistant</span>
+        </div>
+        <div class="ai-chat-container">
+            <div class="ai-messages" id="aiMessages">
+                <div class="ai-message user">
+                    <div class="message-content">${description || 'Help me create a bot'}</div>
+                    ${filesCount > 0 ? `<div class="message-files">${filesCount} file(s) attached</div>` : ''}
+                </div>
+                <div class="ai-message assistant">
+                    <div class="message-content">I'll help you create your bot! Let me analyze your requirements and generate the code for you.</div>
+                </div>
+            </div>
+            <div class="ai-input-container">
+                <input type="text" id="aiInput" placeholder="Ask AI assistant...">
+                <button id="aiSendBtn"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    `;
+    
+    // Insert before file explorer
+    const fileExplorer = sidebar.querySelector('.sidebar-section');
+    sidebar.insertBefore(aiChatSection, fileExplorer);
+    
+    // Generate initial bot files
+    await generateInitialBotFiles(description);
 }
 
 // Generate moderation bot files with selected commands
@@ -1521,5 +1565,232 @@ notificationStyles.textContent = `
     }
 `;
 document.head.appendChild(notificationStyles);
+
+// File Upload Functionality
+function uploadFiles() {
+    document.getElementById('fileUpload').click();
+}
+
+function handleFileUpload(event) {
+    const files = Array.from(event.target.files);
+    
+    files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const content = e.target.result;
+            const fileName = file.name;
+            const fileType = getFileType(fileName);
+            
+            createFileWithContent(fileName, fileType, content);
+            showNotification(`Uploaded: ${fileName}`, 'success');
+        };
+        
+        if (file.type.startsWith('text/') || file.name.endsWith('.js') || file.name.endsWith('.py') || 
+            file.name.endsWith('.json') || file.name.endsWith('.md') || file.name.endsWith('.txt')) {
+            reader.readAsText(file);
+        } else {
+            showNotification(`Unsupported file type: ${file.name}`, 'warning');
+        }
+    });
+    
+    // Clear input
+    event.target.value = '';
+}
+
+function getFileType(fileName) {
+    const extension = fileName.split('.').pop().toLowerCase();
+    const typeMap = {
+        'py': 'python',
+        'js': 'javascript',
+        'json': 'javascript',
+        'txt': 'text',
+        'md': 'text',
+        'env': 'env'
+    };
+    return typeMap[extension] || 'text';
+}
+
+// AI Assistant Functionality
+function initializeAIAssistant() {
+    const aiInput = document.getElementById('aiInput');
+    if (aiInput) {
+        aiInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendAIMessage();
+            }
+        });
+    }
+    
+    // Simulate AI typing effect
+    setTimeout(() => {
+        const typingIndicator = document.querySelector('.typing-indicator');
+        if (typingIndicator) {
+            typingIndicator.style.display = 'none';
+        }
+    }, 3000);
+}
+
+function sendAIMessage() {
+    const input = document.getElementById('aiInput');
+    const message = input.value.trim();
+    
+    if (!message) return;
+    
+    // Add user message
+    addAIMessage(message, 'user');
+    input.value = '';
+    
+    // Show typing indicator and respond
+    showAITyping();
+    setTimeout(() => {
+        const response = generateAIResponse(message);
+        addAIMessage(response, 'assistant');
+        hideAITyping();
+    }, 1500);
+}
+
+function addAIMessage(message, sender) {
+    const messagesContainer = document.getElementById('aiMessages');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `ai-message ${sender}`;
+    
+    const avatarDiv = document.createElement('div');
+    avatarDiv.className = 'ai-avatar';
+    avatarDiv.innerHTML = sender === 'user' ? '<i class="fas fa-user"></i>' : '<i class="fas fa-robot"></i>';
+    
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content';
+    
+    const textDiv = document.createElement('div');
+    textDiv.className = 'message-text';
+    textDiv.innerHTML = message;
+    
+    contentDiv.appendChild(textDiv);
+    messageDiv.appendChild(avatarDiv);
+    messageDiv.appendChild(contentDiv);
+    messagesContainer.appendChild(messageDiv);
+    
+    // Scroll to bottom
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+function showAITyping() {
+    const typingMessage = document.createElement('div');
+    typingMessage.className = 'ai-message assistant typing-message';
+    typingMessage.innerHTML = `
+        <div class="ai-avatar"><i class="fas fa-robot"></i></div>
+        <div class="message-content">
+            <div class="typing-indicator">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('aiMessages').appendChild(typingMessage);
+}
+
+function hideAITyping() {
+    const typingMessage = document.querySelector('.typing-message');
+    if (typingMessage) {
+        typingMessage.remove();
+    }
+}
+
+function quickAsk(question) {
+    document.getElementById('aiInput').value = question;
+    sendAIMessage();
+}
+
+function generateAIResponse(message) {
+    const responses = {
+        'moderation': `I'll help you create a moderation bot! Here's what I can generate for you:
+
+<strong>🛡️ Moderation Features:</strong>
+• Ban/Kick commands with reason logging
+• Auto-moderation for spam and inappropriate content
+• Mute system with timed unmutes
+• Warning system with escalation
+• Message deletion and bulk cleanup
+
+Would you like me to generate the code for any specific moderation feature?`,
+
+        'music': `Great! I can help you add music functionality to your bot:
+
+<strong>🎵 Music Features I can create:</strong>
+• Play music from YouTube/Spotify
+• Queue management (add, remove, skip)
+• Volume control and audio filters
+• Playlist support
+• Now playing display with progress
+
+Which music feature would you like me to implement first?`,
+
+        'debug': `I'm here to help debug your code! Here's how I can assist:
+
+<strong>🔧 Debugging Tools:</strong>
+• Code analysis for common errors
+• Performance optimization suggestions
+• Best practices recommendations
+• Error explanation and fixes
+
+Share your code or describe the issue you're facing, and I'll help you resolve it!`
+    };
+    
+    const lowerMessage = message.toLowerCase();
+    
+    if (lowerMessage.includes('moderation') || lowerMessage.includes('moderate')) {
+        return responses.moderation;
+    } else if (lowerMessage.includes('music') || lowerMessage.includes('audio')) {
+        return responses.music;
+    } else if (lowerMessage.includes('debug') || lowerMessage.includes('fix') || lowerMessage.includes('error')) {
+        return responses.debug;
+    } else if (lowerMessage.includes('hello') || lowerMessage.includes('hi')) {
+        return `Hello! 👋 I'm your AI coding assistant specialized in Discord bot development. I can help you with:
+        
+• Writing bot commands and features
+• Debugging and fixing code issues
+• Optimizing bot performance
+• Explaining Discord.js/discord.py concepts
+• Generating complete bot templates
+
+What would you like to work on today?`;
+    } else {
+        return `I understand you want to work on: "${message}". Let me help you with that! 
+
+I can generate code, explain concepts, debug issues, or provide step-by-step guidance. Could you be more specific about what you'd like me to help you with?
+
+<strong>💡 Popular requests:</strong>
+• "Create a welcome system"
+• "Add reaction roles"
+• "Build an economy bot"
+• "Fix permission errors"`;
+    }
+}
+
+function attachFiles() {
+    showNotification('File attachment feature coming soon!', 'info');
+}
+
+function addPackage() {
+    const packageName = prompt('Enter package name (e.g., axios, moment):');
+    if (packageName && packageName.trim()) {
+        addPackageToList(packageName.trim());
+        showNotification(`Added package: ${packageName}`, 'success');
+    }
+}
+
+function addPackageToList(packageName) {
+    const packageList = document.getElementById('packageList');
+    const packageItem = document.createElement('div');
+    packageItem.className = 'package-item';
+    packageItem.innerHTML = `
+        <i class="fas fa-cube"></i>
+        <span>${packageName}</span>
+        <span class="package-version">latest</span>
+    `;
+    packageList.appendChild(packageItem);
+}
 
 console.log('🎉 Smart Serve IDE loaded successfully!');

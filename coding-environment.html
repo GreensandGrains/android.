@@ -77,6 +77,70 @@
     <div class="ide-layout">
         <!-- Sidebar -->
         <div class="sidebar">
+            <!-- AI Assistant Panel -->
+            <div class="sidebar-section ai-section">
+                <div class="section-header ai-header">
+                    <div class="ai-indicator">
+                        <div class="ai-pulse"></div>
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <span>AI Assistant</span>
+                    <div class="ai-status online">
+                        <div class="status-dot"></div>
+                    </div>
+                </div>
+                <div class="ai-chat-container">
+                    <div class="ai-messages" id="aiMessages">
+                        <div class="ai-message assistant">
+                            <div class="ai-avatar">
+                                <i class="fas fa-robot"></i>
+                            </div>
+                            <div class="message-content">
+                                <div class="typing-indicator">
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                </div>
+                                <div class="message-text">
+                                    Hello! I'm your AI coding assistant. I can help you build amazing Discord bots. Ask me anything about:
+                                    <ul>
+                                        <li>🤖 Bot development</li>
+                                        <li>📝 Code generation</li>
+                                        <li>🐛 Bug fixing</li>
+                                        <li>⚡ Performance optimization</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ai-input-section">
+                        <div class="ai-input-container">
+                            <input type="text" id="aiInput" placeholder="Ask AI about bot development..." />
+                            <div class="input-actions">
+                                <button class="attachment-btn" onclick="attachFiles()" title="Attach Files">
+                                    <i class="fas fa-paperclip"></i>
+                                </button>
+                                <button class="send-btn" id="aiSendBtn" onclick="sendAIMessage()">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="ai-suggestions">
+                            <button class="suggestion-chip" onclick="quickAsk('Create a moderation bot')">
+                                🛡️ Moderation bot
+                            </button>
+                            <button class="suggestion-chip" onclick="quickAsk('Add music commands')">
+                                🎵 Music features
+                            </button>
+                            <button class="suggestion-chip" onclick="quickAsk('Fix my code')">
+                                🔧 Debug code
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- File Explorer -->
             <div class="sidebar-section">
                 <div class="section-header">
                     <i class="fas fa-folder"></i>
@@ -88,6 +152,10 @@
                         <button class="icon-btn" onclick="createNewFolder()" title="New Folder">
                             <i class="fas fa-folder-plus"></i>
                         </button>
+                        <button class="icon-btn" onclick="uploadFiles()" title="Upload Files">
+                            <i class="fas fa-upload"></i>
+                        </button>
+                        <input type="file" id="fileUpload" multiple style="display: none;" onchange="handleFileUpload(event)">
                     </div>
                 </div>
                 <div class="file-explorer" id="fileExplorer">
@@ -97,6 +165,26 @@
                         </div>
                         <div class="empty-text">No files yet</div>
                         <div class="empty-subtext">Create your first file to get started</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Package Manager -->
+            <div class="sidebar-section package-section">
+                <div class="section-header">
+                    <i class="fas fa-cube"></i>
+                    <span>Packages</span>
+                    <div class="section-actions">
+                        <button class="icon-btn" onclick="addPackage()" title="Add Package">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="package-list" id="packageList">
+                    <div class="package-item">
+                        <i class="fab fa-node-js"></i>
+                        <span>discord.js</span>
+                        <span class="package-version">v14.0.0</span>
                     </div>
                 </div>
             </div>

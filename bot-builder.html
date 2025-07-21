@@ -29,35 +29,7 @@
                 <span>Smart Serve</span>
             </div>
             <div class="header-profile">
-                <div class="user-dropdown" id="user-dropdown">
-                    <div class="user-trigger" onclick="toggleUserDropdown()">
-                        <img src="https://via.placeholder.com/40x40/ffffff/000000?text=U" alt="Profile" id="user-avatar" />
-                        <div class="user-info">
-                            <span id="user-name">User</span>
-                            <span class="user-role">Developer</span>
-                        </div>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="dropdown-menu" id="dropdown-menu">
-                        <a href="profile.html" class="dropdown-item">
-                            <i class="fas fa-user"></i>
-                            Profile
-                        </a>
-                        <a href="bots.html" class="dropdown-item">
-                            <i class="fas fa-robot"></i>
-                            My Bots
-                        </a>
-                        <a href="template.html" class="dropdown-item">
-                            <i class="fas fa-code"></i>
-                            Templates
-                        </a>
-                        <div class="dropdown-divider"></div>
-                        <a href="#" onclick="handleLogout()" class="dropdown-item">
-                            <i class="fas fa-sign-out-alt"></i>
-                            Logout
-                        </a>
-                    </div>
-                </div>
+                <span id="user-name" style="color: white; font-weight: 500;">User</span>
             </div>
         </div>
     </header>
@@ -221,29 +193,34 @@
 
         <div class="bot-builder-form">
             <div class="form-group">
-                <label for="bot-content" data-translate="botContent">Bot Content</label>
-                <textarea 
-                    id="bot-content" 
-                    data-translate="botContentPlaceholder"
-                    placeholder="Say your content..." 
-                    rows="8"
-                ></textarea>
+                <label for="bot-content" data-translate="botContent">Describe Your Bot</label>
+                <div class="input-container">
+                    <textarea 
+                        id="bot-content" 
+                        data-translate="botContentPlaceholder"
+                        placeholder="Describe what kind of bot you want to create..." 
+                        rows="6"
+                    ></textarea>
+                    <div class="input-actions">
+                        <label class="file-upload-btn" for="file-upload">
+                            <i class="fas fa-paperclip"></i>
+                            <span>Attach Files</span>
+                        </label>
+                        <input type="file" id="file-upload" multiple accept="image/*,video/*,.txt,.py,.js,.json" style="display: none;">
+                        <button class="send-btn" id="send-btn">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="attached-files" id="attached-files" style="display: none;"></div>
             </div>
 
             <div class="button-group">
-                    <button class="btn-template" onclick="openModerationTemplate()">
-                        <i class="fas fa-shield-alt"></i>
-                        Moderation Template
-                    </button>
-                    <button class="btn-ai-create disabled" id="ai-create-btn">
-                        <i class="fas fa-magic"></i>
-                        <span class="strikethrough">Create by AI</span>
-                    </button>
-                    <button class="btn-make-order" id="make-order-btn">
-                        <i class="fas fa-shopping-cart"></i>
-                        Make an Order
-                    </button>
-                </div>
+                <button class="btn-ai-create" id="ai-create-btn">
+                    <i class="fas fa-magic"></i>
+                    <span>Create by AI</span>
+                </button>
+            </div>
 
             <!-- Language Selection Cards -->
             <div class="language-section">

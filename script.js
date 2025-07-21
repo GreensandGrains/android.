@@ -188,7 +188,7 @@ function setupContactForm() {
                 // Success animation
                 submitBtn.style.background = '#22c55e';
                 btnLoader.innerHTML = '<i class="fas fa-check"></i>';
-                
+
                 setTimeout(() => {
                     showNotification('Message sent successfully! 🎉', 'success');
                     contactForm.reset();
@@ -256,23 +256,23 @@ function showNotification(message, type = 'info') {
                 animation: notificationSlideIn 0.4s ease-out;
                 transform: translateX(0);
             }
-            
+
             @keyframes notificationSlideIn {
                 from { transform: translateX(100%); opacity: 0; }
                 to { transform: translateX(0); opacity: 1; }
             }
-            
+
             .notification-success { border-color: #22c55e; }
             .notification-error { border-color: #ef4444; }
             .notification-info { border-color: #60a5fa; }
-            
+
             .notification-content {
                 display: flex;
                 align-items: center;
                 gap: 12px;
                 flex: 1;
             }
-            
+
             .notification-close {
                 background: none;
                 border: none;
@@ -283,16 +283,16 @@ function showNotification(message, type = 'info') {
                 border-radius: 50%;
                 transition: all 0.2s ease;
             }
-            
+
             .notification-close:hover {
                 color: white;
                 background: rgba(255, 255, 255, 0.1);
             }
-            
+
             .form-group {
                 position: relative;
             }
-            
+
             .form-line {
                 position: absolute;
                 bottom: 0;
@@ -416,7 +416,7 @@ function isMobileDevice() {
 function checkMobileOptimization() {
     if (isMobileDevice()) {
         document.body.classList.add('mobile-device');
-        
+
         // Show mobile optimization notice
         const notice = document.createElement('div');
         notice.className = 'mobile-notice';
@@ -454,7 +454,7 @@ function updateNavigation() {
                 userProfile.style.display = 'flex';
                 const userAvatar = document.getElementById('user-avatar');
                 const userName = document.getElementById('user-name');
-                
+
                 // Construct proper Discord avatar URL
                 let avatarUrl;
                 if (user.avatar) {
@@ -465,7 +465,7 @@ function updateNavigation() {
                     const discriminator = user.discriminator || (parseInt(user.id) % 5);
                     avatarUrl = `https://cdn.discordapp.com/embed/avatars/${discriminator % 5}.png`;
                 }
-                
+
                 if (userAvatar) userAvatar.src = avatarUrl;
                 if (userName) userName.textContent = user.username || 'User';
             }
@@ -504,7 +504,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Start atom particles after a delay
     setTimeout(createAtomParticles, 2000);
+    checkAuthStatus();
+    initializeProfileDropdown();
 });
+
+// Profile dropdown functionality
+function toggleProfileDropdown() {
+    const dropdown = document.getElementById('user-profile-dropdown');
+    dropdown.classList.toggle('active');
+}
+
+function initializeProfileDropdown() {
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+        const dropdown = document.getElementById('user-profile-dropdown');
+        if (dropdown && !dropdown.contains(event.target)) {
+            dropdown.classList.remove('active');
+        }
+    });
+}
+
+// Check authentication status
+function checkAuthStatus() {
+    
+}
 
 // Add click events for CTA buttons
 document.addEventListener('DOMContentLoaded', () => {
