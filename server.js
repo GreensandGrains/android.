@@ -75,17 +75,7 @@ app.get('/', (req, res) => {
 });
 
 // Discord OAuth initiation
-app.get('/auth/discord', (req, res) => {
-    const state = generateState();
-    sessions.set(state, { timestamp: Date.now() });
 
-    const params = new URLSearchParams({
-        client_id: DISCORD_CLIENT_ID,
-        redirect_uri: DISCORD_REDIRECT_URI,
-        response_type: 'code',
-        scope: 'identify email',
-        state: state
-    });
 
     const discordAuthUrl = `https://discord.com/api/oauth2/authorize?${params.toString()}`;
     res.redirect(discordAuthUrl);
