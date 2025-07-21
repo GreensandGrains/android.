@@ -44,7 +44,7 @@ try {
 }
 
 // Discord OAuth configuration
-const DISCORD_CLIENT_ID = '1382392124619886652';
+const DISCORD_CLIENT_ID = '1372226433191247983';
 const DISCORD_CLIENT_SECRET = 'xSN3hlhYuPX5RaRN9aNRk6Dw22kLK9sx';
 const DISCORD_REDIRECT_URI = 'https://android-m682.onrender.com/auth/discord/callback';
 
