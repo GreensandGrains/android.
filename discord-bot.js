@@ -662,12 +662,12 @@ class OrderBot {
                         return;
                     }
 
-                    const targetUser = options.getUser('user');
+                    const upgradeTargetUser = options.getUser('user');
                     const newPlan = options.getString('plan');
 
                     try {
-                        await this.database.updateUserPlan(targetUser.id, newPlan);
-                        await this.database.resetUserUsage(targetUser.id);
+                        await this.database.updateUserPlan(upgradeTargetUser.id, newPlan);
+                        await this.database.resetUserUsage(upgradeTargetUser.id);
 
                         const planDetails = {
                             starter: { commands: '50', bots: '3', features: 'Basic AI assistance' },
@@ -680,7 +680,7 @@ class OrderBot {
                         await interaction.reply({
                             embeds: [{
                                 title: '✅ User Plan Updated',
-                                description: `**${targetUser.username}** has been upgraded to **${newPlan.toUpperCase()}** plan!`,
+                                description: `**${upgradeTargetUser.username}** has been upgraded to **${newPlan.toUpperCase()}** plan!`,
                                 fields: [
                                     { name: 'AI Commands', value: details.commands, inline: true },
                                     { name: 'Bot Limit', value: details.bots, inline: true },
@@ -694,7 +694,7 @@ class OrderBot {
 
                         // Notify the user
                         try {
-                            const userDM = await targetUser.createDM();
+                            const userDM = await upgradeTargetUser.createDM();
                             await userDM.send({
                                 embeds: [{
                                     title: '🎉 Plan Upgraded!',
