@@ -77,6 +77,18 @@ app.get('/', (req, res) => {
 // Discord OAuth initiation
 
 
+    app.get('/auth/discord', (req, res) => {
+    const state = generateState();
+    sessions.set(state, { timestamp: Date.now() });
+    
+    const params = new URLSearchParams({
+        client_id: DISCORD_CLIENT_ID,
+        redirect_uri: DISCORD_REDIRECT_URI,
+        response_type: 'code',
+        scope: 'identify email',
+        state: state
+    });
+    
     const discordAuthUrl = `https://discord.com/api/oauth2/authorize?${params.toString()}`;
     res.redirect(discordAuthUrl);
 });
@@ -84,15 +96,11 @@ app.get('/', (req, res) => {
 // Discord OAuth callback
 app.get('/auth/discord/callback', async (req, res) => {
     const { code, state } = req.query;
-
-    if (!code) {
-        return res.redirect('/login.html?error=no_code');
+    
+    if (!code || !state || !sessions.has(state)) {
+        return res.redirect('/login.html?error=invalid_request');
     }
-
-    if (!state || !sessions.has(state)) {
-        return res.redirect('/login.html?error=invalid_state');
-    }
-
+    
     try {
         // Exchange code for access token
         const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
