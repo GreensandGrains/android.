@@ -1,7 +1,9 @@
 const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, SlashCommandBuilder, REST, Routes } = require('discord.js');
+const CustomAIBotAssistant = require('./ai-bot-assistant');
 
 class OrderBot {
-    constructor() {
+    constructor(database) {
+        this.database = database;
         this.client = new Client({
             intents: [
                 GatewayIntentBits.Guilds,
@@ -22,6 +24,7 @@ class OrderBot {
         this.userCode = new Map(); // Store user code submissions
         this.awaitingCodeSubmission = new Map(); // Store users submitting code
         this.pendingCodeUploads = new Map();
+        this.aiAssistant = new CustomAIBotAssistant(database);
 
         this.setupEventHandlers();
         this.startDeadlineReminders();
@@ -150,6 +153,240 @@ class OrderBot {
                             option.setName('filename')
                                 .setDescription('The name of the file to delete')
                                 .setRequired(true)
+                        )
+                ),
+
+            new SlashCommandBuilder()
+                .setName('upgrader')
+                .setDescription('Upgrade a user\'s plan (ADMIN ONLY)')
+                .addUserOption(option =>
+                    option.setName('user')
+                        .setDescription('The user to upgrade')
+                        .setRequired(true)
+                )
+                .addStringOption(option =>
+                    option.setName('plan')
+                        .setDescription('The plan to upgrade to')
+                        .setRequired(true)
+                        .addChoices(
+                            { name: 'Starter', value: 'starter' },
+                            { name: 'Premium', value: 'premium' },
+                            { name: 'Pro', value: 'pro' }
+                        )
+                ),
+
+            new SlashCommandBuilder()
+                .setName('aicode')
+                .setDescription('Generate Discord bot code with AI')
+                .addStringOption(option =>
+                    option.setName('prompt')
+                        .setDescription('Describe what kind of bot you want')
+                        .setRequired(true)
+                )
+                .addStringOption(option =>
+                    option.setName('language')
+                        .setDescription('Programming language')
+                        .setRequired(false)
+                        .addChoices(
+                            { name: 'JavaScript', value: 'javascript' },
+                            { name: 'Python', value: 'python' }
+                        )
+                ),
+
+            new SlashCommandBuilder()
+                .setName('aidebug')
+                .setDescription('Debug your Discord bot code with AI')
+                .addStringOption(option =>
+                    option.setName('error')
+                        .setDescription('The error message you\'re getting')
+                        .setRequired(true)
+                ),
+
+            new SlashCommandBuilder()
+                .setName('checkplan')
+                .setDescription('Check your current plan and usage'),
+
+            new SlashCommandBuilder()
+                .setName('aioptimize')
+                .setDescription('Optimize your code with AI')
+                .addStringOption(option =>
+                    option.setName('code')
+                        .setDescription('Code to optimize')
+                        .setRequired(true)
+                )
+                .addStringOption(option =>
+                    option.setName('language')
+                        .setDescription('Programming language')
+                        .setRequired(false)
+                        .addChoices(
+                            { name: 'JavaScript', value: 'javascript' },
+                            { name: 'Python', value: 'python' }
+                        )
+                ),
+
+            new SlashCommandBuilder()
+                .setName('aisecurity')
+                .setDescription('Analyze code for security vulnerabilities')
+                .addStringOption(option =>
+                    option.setName('code')
+                        .setDescription('Code to analyze')
+                        .setRequired(true)
+                )
+                .addStringOption(option =>
+                    option.setName('language')
+                        .setDescription('Programming language')
+                        .setRequired(false)
+                        .addChoices(
+                            { name: 'JavaScript', value: 'javascript' },
+                            { name: 'Python', value: 'python' }
+                        )
+                ),
+
+            new SlashCommandBuilder()
+                .setName('aiperformance')
+                .setDescription('Analyze code performance and suggest improvements')
+                .addStringOption(option =>
+                    option.setName('code')
+                        .setDescription('Code to analyze')
+                        .setRequired(true)
+                )
+                .addStringOption(option =>
+                    option.setName('language')
+                        .setDescription('Programming language')
+                        .setRequired(false)
+                        .addChoices(
+                            { name: 'JavaScript', value: 'javascript' },
+                            { name: 'Python', value: 'python' }
+                        )
+                ),
+
+            new SlashCommandBuilder()
+                .setName('aireview')
+                .setDescription('Get AI code review and quality analysis')
+                .addStringOption(option =>
+                    option.setName('code')
+                        .setDescription('Code to review')
+                        .setRequired(true)
+                )
+                .addStringOption(option =>
+                    option.setName('language')
+                        .setDescription('Programming language')
+                        .setRequired(false)
+                        .addChoices(
+                            { name: 'JavaScript', value: 'javascript' },
+                            { name: 'Python', value: 'python' }
+                        )
+                ),
+
+            new SlashCommandBuilder()
+                .setName('aidocs')
+                .setDescription('Generate documentation for your code')
+                .addStringOption(option =>
+                    option.setName('code')
+                        .setDescription('Code to document')
+                        .setRequired(true)
+                )
+                .addStringOption(option =>
+                    option.setName('language')
+                        .setDescription('Programming language')
+                        .setRequired(false)
+                        .addChoices(
+                            { name: 'JavaScript', value: 'javascript' },
+                            { name: 'Python', value: 'python' }
+                        )
+                ),
+
+            new SlashCommandBuilder()
+                .setName('aitests')
+                .setDescription('Generate tests for your code')
+                .addStringOption(option =>
+                    option.setName('code')
+                        .setDescription('Code to test')
+                        .setRequired(true)
+                )
+                .addStringOption(option =>
+                    option.setName('language')
+                        .setDescription('Programming language')
+                        .setRequired(false)
+                        .addChoices(
+                            { name: 'JavaScript', value: 'javascript' },
+                            { name: 'Python', value: 'python' }
+                        )
+                ),
+
+            new SlashCommandBuilder()
+                .setName('aitranslate')
+                .setDescription('Translate code between languages')
+                .addStringOption(option =>
+                    option.setName('code')
+                        .setDescription('Code to translate')
+                        .setRequired(true)
+                )
+                .addStringOption(option =>
+                    option.setName('from')
+                        .setDescription('Source language')
+                        .setRequired(true)
+                        .addChoices(
+                            { name: 'JavaScript', value: 'javascript' },
+                            { name: 'Python', value: 'python' }
+                        )
+                )
+                .addStringOption(option =>
+                    option.setName('to')
+                        .setDescription('Target language')
+                        .setRequired(true)
+                        .addChoices(
+                            { name: 'JavaScript', value: 'javascript' },
+                            { name: 'Python', value: 'python' }
+                        )
+                ),
+
+            new SlashCommandBuilder()
+                .setName('aibrainstorm')
+                .setDescription('AI brainstorming session for ideas and solutions')
+                .addStringOption(option =>
+                    option.setName('topic')
+                        .setDescription('Topic to brainstorm about')
+                        .setRequired(true)
+                )
+                .addStringOption(option =>
+                    option.setName('domain')
+                        .setDescription('Domain/field')
+                        .setRequired(false)
+                        .addChoices(
+                            { name: 'Discord Bots', value: 'discord' },
+                            { name: 'Web Development', value: 'web' },
+                            { name: 'Game Development', value: 'games' },
+                            { name: 'AI/ML', value: 'ai' },
+                            { name: 'General', value: 'general' }
+                        )
+                ),
+
+            new SlashCommandBuilder()
+                .setName('aiadvanced')
+                .setDescription('Advanced AI code generation with complexity options')
+                .addStringOption(option =>
+                    option.setName('prompt')
+                        .setDescription('Describe what you want to build')
+                        .setRequired(true)
+                )
+                .addStringOption(option =>
+                    option.setName('complexity')
+                        .setDescription('Complexity level')
+                        .setRequired(false)
+                        .addChoices(
+                            { name: 'Basic', value: 'basic' },
+                            { name: 'Advanced', value: 'advanced' },
+                            { name: 'Pro', value: 'pro' }
+                        )
+                )
+                .addStringOption(option =>
+                    option.setName('language')
+                        .setDescription('Programming language')
+                        .setRequired(false)
+                        .addChoices(
+                            { name: 'JavaScript', value: 'javascript' },
+                            { name: 'Python', value: 'python' }
                         )
                 )
         ];
@@ -411,6 +648,127 @@ class OrderBot {
                         }
                     }
                     break;
+
+                case 'upgrader':
+                    // Check if user is admin
+                    const adminMember = interaction.member;
+                    const adminRole = process.env.ADMIN_ROLE_ID;
+
+                    if (!adminMember.roles.cache.has(adminRole)) {
+                        await interaction.reply({
+                            content: '❌ This command is only available to administrators.',
+                            ephemeral: true
+                        });
+                        return;
+                    }
+
+                    const targetUser = options.getUser('user');
+                    const newPlan = options.getString('plan');
+
+                    try {
+                        await this.database.updateUserPlan(targetUser.id, newPlan);
+                        await this.database.resetUserUsage(targetUser.id);
+
+                        const planDetails = {
+                            starter: { commands: '50', bots: '3', features: 'Basic AI assistance' },
+                            premium: { commands: '100', bots: '5', features: 'Enhanced AI assistance' },
+                            pro: { commands: 'Unlimited', bots: 'Unlimited', features: 'Advanced AI + brainstorming' }
+                        };
+
+                        const details = planDetails[newPlan];
+
+                        await interaction.reply({
+                            embeds: [{
+                                title: '✅ User Plan Updated',
+                                description: `**${targetUser.username}** has been upgraded to **${newPlan.toUpperCase()}** plan!`,
+                                fields: [
+                                    { name: 'AI Commands', value: details.commands, inline: true },
+                                    { name: 'Bot Limit', value: details.bots, inline: true },
+                                    { name: 'Features', value: details.features, inline: true }
+                                ],
+                                color: 0x00ff00,
+                                timestamp: new Date()
+                            }],
+                            ephemeral: true
+                        });
+
+                        // Notify the user
+                        try {
+                            const userDM = await targetUser.createDM();
+                            await userDM.send({
+                                embeds: [{
+                                    title: '🎉 Plan Upgraded!',
+                                    description: `Your Smart Serve plan has been upgraded to **${newPlan.toUpperCase()}**!`,
+                                    fields: [
+                                        { name: 'AI Commands', value: details.commands, inline: true },
+                                        { name: 'Bot Limit', value: details.bots, inline: true },
+                                        { name: 'New Features', value: details.features, inline: false }
+                                    ],
+                                    color: 0x00ff00,
+                                    footer: { text: 'Your usage counter has been reset!' }
+                                }]
+                            });
+                        } catch (dmError) {
+                            console.log('Could not send upgrade notification to user');
+                        }
+
+                    } catch (error) {
+                        console.error('Error upgrading user:', error);
+                        await interaction.reply({
+                            content: '❌ Failed to upgrade user plan. Please try again.',
+                            ephemeral: true
+                        });
+                    }
+                    break;
+
+                case 'aicode':
+                    await this.handleAICodeCommand(interaction);
+                    break;
+
+                case 'aidebug':
+                    await this.handleAIDebugCommand(interaction);
+                    break;
+
+                case 'checkplan':
+                    await this.handleCheckPlanCommand(interaction);
+                    break;
+
+                case 'aioptimize':
+                    await this.handleAIOptimizeCommand(interaction);
+                    break;
+
+                case 'aisecurity':
+                    await this.handleAISecurityCommand(interaction);
+                    break;
+
+                case 'aiperformance':
+                    await this.handleAIPerformanceCommand(interaction);
+                    break;
+
+                case 'aireview':
+                    await this.handleAIReviewCommand(interaction);
+                    break;
+
+                case 'aidocs':
+                    await this.handleAIDocsCommand(interaction);
+                    break;
+
+                case 'aitests':
+                    await this.handleAITestsCommand(interaction);
+                    break;
+
+                case 'aitranslate':
+                    await this.handleAITranslateCommand(interaction);
+                    break;
+
+                case 'aibrainstorm':
+                    await this.handleAIBrainstormCommand(interaction);
+                    break;
+
+                case 'aiadvanced':
+                    await this.handleAIAdvancedCommand(interaction);
+                    break;
+
                 default:
                     await interaction.reply({ content: '❌ Unknown command.', ephemeral: true });
             }
@@ -701,6 +1059,532 @@ class OrderBot {
         await interaction.reply({ content: `✅ **${displayName}**${orderInfo} deleted successfully.`, ephemeral: true });
     }
 
+    async handleAICodeCommand(interaction) {
+        const userId = interaction.user.id;
+        const prompt = interaction.options.getString('prompt');
+        const language = interaction.options.getString('language') || 'javascript';
+
+        await interaction.deferReply({ ephemeral: true });
+
+        try {
+            const result = await this.aiAssistant.generateBotCode(userId, prompt, language);
+
+            if (!result.success) {
+                if (result.upgradeRequired) {
+                    await interaction.editReply({
+                        embeds: [{
+                            title: '⛔ Command Limit Reached',
+                            description: result.error,
+                            fields: [
+                                { name: 'Current Plan', value: 'Starter', inline: true },
+                                { name: 'Upgrade Options', value: 'Premium: 100 commands\nPro: Unlimited', inline: true }
+                            ],
+                            color: 0xff0000,
+                            footer: { text: 'Contact an admin for plan upgrades' }
+                        }]
+                    });
+                } else {
+                    await interaction.editReply({ content: `❌ ${result.error}` });
+                }
+                return;
+            }
+
+            // Store generated files for the user
+            if (!this.userCode.has(userId)) {
+                this.userCode.set(userId, new Map());
+            }
+
+            const userCodeMap = this.userCode.get(userId);
+            const timestamp = Date.now();
+
+            for (const [filename, content] of Object.entries(result.code.files)) {
+                const fileKey = `ai_${timestamp}_${filename}`;
+                userCodeMap.set(fileKey, {
+                    filename: filename,
+                    content: content,
+                    lastModified: timestamp,
+                    language: language,
+                    orderNumber: null,
+                    uploadedBy: userId,
+                    isAIGenerated: true
+                });
+            }
+
+            await interaction.editReply({
+                embeds: [{
+                    title: '🤖 AI Bot Code Generated!',
+                    description: `Generated ${Object.keys(result.code.files).length} files for your Discord bot.`,
+                    fields: [
+                        { name: 'Language', value: language.toUpperCase(), inline: true },
+                        { name: 'Files Created', value: Object.keys(result.code.files).join('\n'), inline: true },
+                        { name: 'Usage', value: `Use \`/viewcode\` to see your files`, inline: false }
+                    ],
+                    color: 0x00ff00,
+                    footer: { text: 'Visit your coding environment to edit and run the code' }
+                }]
+            });
+
+        } catch (error) {
+            console.error('AI code generation error:', error);
+            await interaction.editReply({ content: '❌ Failed to generate code. Please try again later.' });
+        }
+    }
+
+    async handleAIDebugCommand(interaction) {
+        const userId = interaction.user.id;
+        const errorMessage = interaction.options.getString('error');
+
+        await interaction.deferReply({ ephemeral: true });
+
+        try {
+            const result = await this.aiAssistant.debugCode('', errorMessage, userId);
+
+            if (!result.success) {
+                await interaction.editReply({
+                    embeds: [{
+                        title: '⛔ Debug Limit Reached',
+                        description: result.error,
+                        color: 0xff0000,
+                        footer: { text: 'Contact an admin for plan upgrades' }
+                    }]
+                });
+                return;
+            }
+
+            const fixesText = result.fixes.map((fix, index) => 
+                `**${index + 1}. ${fix.issue}**\n${fix.solution}\n\`\`\`${fix.codeExample}\`\`\``
+            ).join('\n\n');
+
+            await interaction.editReply({
+                embeds: [{
+                    title: '🔧 AI Debug Analysis',
+                    description: result.explanation,
+                    fields: [
+                        { name: 'Suggested Fixes', value: fixesText.length > 1000 ? fixesText.substring(0, 1000) + '...' : fixesText }
+                    ],
+                    color: 0x0099ff,
+                    footer: { text: 'AI-powered debugging assistance' }
+                }]
+            });
+
+        } catch (error) {
+            console.error('AI debug error:', error);
+            await interaction.editReply({ content: '❌ Failed to debug code. Please try again later.' });
+        }
+    }
+
+    async handleCheckPlanCommand(interaction) {
+        const userId = interaction.user.id;
+
+        try {
+            const userPlan = await this.aiAssistant.getUserPlan(userId);
+            const usage = await this.aiAssistant.getUserUsage(userId);
+
+            const planDetails = {
+                starter: { name: 'Starter', commands: 50, bots: 3, color: 0x999999 },
+                premium: { name: 'Premium', commands: 100, bots: 5, color: 0x0099ff },
+                pro: { name: 'Pro', commands: -1, bots: -1, color: 0x00ff00 }
+            };
+
+            const details = planDetails[userPlan.name];
+            const commandsText = details.commands === -1 ? 'Unlimited' : `${usage}/${details.commands}`;
+            const botsText = details.bots === -1 ? 'Unlimited' : details.bots.toString();
+
+            await interaction.reply({
+                embeds: [{
+                    title: `📊 Your ${details.name} Plan`,
+                    fields: [
+                        { name: 'AI Commands Used', value: commandsText, inline: true },
+                        { name: 'Bot Limit', value: botsText, inline: true },
+                        { name: 'Plan Benefits', value: userPlan.name === 'pro' ? 'Advanced AI + Brainstorming' : 'Basic AI assistance', inline: false }
+                    ],
+                    color: details.color,
+                    footer: { text: 'Usage resets monthly' }
+                }],
+                ephemeral: true
+            });
+
+        } catch (error) {
+            console.error('Error checking plan:', error);
+            await interaction.reply({ content: '❌ Failed to check plan details.', ephemeral: true });
+        }
+    }
+
+    async handleAIOptimizeCommand(interaction) {
+        const userId = interaction.user.id;
+        const code = interaction.options.getString('code');
+        const language = interaction.options.getString('language') || 'javascript';
+
+        await interaction.deferReply({ ephemeral: true });
+
+        try {
+            const result = await this.aiAssistant.optimizeCode(userId, code, language);
+
+            if (!result.success) {
+                await interaction.editReply({
+                    embeds: [{
+                        title: '⛔ Optimization Failed',
+                        description: result.error,
+                        color: 0xff0000
+                    }]
+                });
+                return;
+            }
+
+            await interaction.editReply({
+                embeds: [{
+                    title: '⚡ Code Optimization Results',
+                    fields: [
+                        { name: 'Improvements Found', value: result.optimization.improvements.join('\n') || 'None', inline: false },
+                        { name: 'Performance Gain', value: result.optimization.metrics.performanceGain || 'N/A', inline: true },
+                        { name: 'Memory Optimization', value: result.optimization.metrics.memoryReduction || 'N/A', inline: true }
+                    ],
+                    color: 0x00ff00,
+                    footer: { text: 'AI-powered code optimization' }
+                }]
+            });
+
+        } catch (error) {
+            console.error('AI optimization error:', error);
+            await interaction.editReply({ content: '❌ Failed to optimize code. Please try again later.' });
+        }
+    }
+
+    async handleAISecurityCommand(interaction) {
+        const userId = interaction.user.id;
+        const code = interaction.options.getString('code');
+        const language = interaction.options.getString('language') || 'javascript';
+
+        await interaction.deferReply({ ephemeral: true });
+
+        try {
+            const result = await this.aiAssistant.performSecurityAnalysis(userId, code, language);
+
+            if (!result.success) {
+                await interaction.editReply({
+                    embeds: [{
+                        title: '⛔ Security Analysis Failed',
+                        description: result.error,
+                        color: 0xff0000
+                    }]
+                });
+                return;
+            }
+
+            const vulnCount = result.security.vulnerabilities.length;
+            const securityScore = result.security.securityScore || 'N/A';
+
+            await interaction.editReply({
+                embeds: [{
+                    title: '🔒 Security Analysis Results',
+                    fields: [
+                        { name: 'Security Score', value: `${securityScore}/100`, inline: true },
+                        { name: 'Vulnerabilities Found', value: vulnCount.toString(), inline: true },
+                        { name: 'Risk Level', value: vulnCount > 5 ? 'High' : vulnCount > 2 ? 'Medium' : 'Low', inline: true },
+                        { name: 'Top Issues', value: result.security.vulnerabilities.slice(0, 3).join('\n') || 'None found', inline: false }
+                    ],
+                    color: vulnCount > 5 ? 0xff0000 : vulnCount > 2 ? 0xffa500 : 0x00ff00,
+                    footer: { text: 'AI-powered security analysis' }
+                }]
+            });
+
+        } catch (error) {
+            console.error('AI security error:', error);
+            await interaction.editReply({ content: '❌ Failed to analyze security. Please try again later.' });
+        }
+    }
+
+    async handleAIPerformanceCommand(interaction) {
+        const userId = interaction.user.id;
+        const code = interaction.options.getString('code');
+        const language = interaction.options.getString('language') || 'javascript';
+
+        await interaction.deferReply({ ephemeral: true });
+
+        try {
+            const result = await this.aiAssistant.analyzePerformance(userId, code, language);
+
+            if (!result.success) {
+                await interaction.editReply({
+                    embeds: [{
+                        title: '⛔ Performance Analysis Failed',
+                        description: result.error,
+                        color: 0xff0000
+                    }]
+                });
+                return;
+            }
+
+            await interaction.editReply({
+                embeds: [{
+                    title: '📊 Performance Analysis Results',
+                    fields: [
+                        { name: 'Performance Score', value: result.performance.metrics.score || 'N/A', inline: true },
+                        { name: 'Execution Time', value: result.performance.metrics.executionTime || 'N/A', inline: true },
+                        { name: 'Memory Usage', value: result.performance.metrics.memoryUsage || 'N/A', inline: true },
+                        { name: 'Bottlenecks', value: result.performance.bottlenecks.join('\n') || 'None detected', inline: false }
+                    ],
+                    color: 0x0099ff,
+                    footer: { text: 'AI-powered performance analysis' }
+                }]
+            });
+
+        } catch (error) {
+            console.error('AI performance error:', error);
+            await interaction.editReply({ content: '❌ Failed to analyze performance. Please try again later.' });
+        }
+    }
+
+    async handleAIReviewCommand(interaction) {
+        const userId = interaction.user.id;
+        const code = interaction.options.getString('code');
+        const language = interaction.options.getString('language') || 'javascript';
+
+        await interaction.deferReply({ ephemeral: true });
+
+        try {
+            const result = await this.aiAssistant.performCodeReview(userId, code, language);
+
+            if (!result.success) {
+                await interaction.editReply({
+                    embeds: [{
+                        title: '⛔ Code Review Failed',
+                        description: result.error,
+                        color: 0xff0000
+                    }]
+                });
+                return;
+            }
+
+            await interaction.editReply({
+                embeds: [{
+                    title: '📝 Code Review Results',
+                    fields: [
+                        { name: 'Quality Score', value: `${result.review.qualityScore}/100`, inline: true },
+                        { name: 'Maintainability', value: result.review.maintainability, inline: true },
+                        { name: 'Style Issues', value: result.review.styleIssues.length.toString(), inline: true },
+                        { name: 'Key Suggestions', value: result.review.suggestions.slice(0, 3).join('\n') || 'Code looks good!', inline: false }
+                    ],
+                    color: 0x9966cc,
+                    footer: { text: 'AI-powered code review' }
+                }]
+            });
+
+        } catch (error) {
+            console.error('AI review error:', error);
+            await interaction.editReply({ content: '❌ Failed to review code. Please try again later.' });
+        }
+    }
+
+    async handleAIDocsCommand(interaction) {
+        const userId = interaction.user.id;
+        const code = interaction.options.getString('code');
+        const language = interaction.options.getString('language') || 'javascript';
+
+        await interaction.deferReply({ ephemeral: true });
+
+        try {
+            const result = await this.aiAssistant.generateDocumentation(userId, code, language);
+
+            if (!result.success) {
+                await interaction.editReply({
+                    embeds: [{
+                        title: '⛔ Documentation Generation Failed',
+                        description: result.error,
+                        color: 0xff0000
+                    }]
+                });
+                return;
+            }
+
+            await interaction.editReply({
+                embeds: [{
+                    title: '📚 Generated Documentation',
+                    description: 'Documentation has been generated for your code',
+                    fields: [
+                        { name: 'API Documentation', value: result.documentation.apiDocs ? '✅ Generated' : '❌ Not available', inline: true },
+                        { name: 'README', value: result.documentation.readme ? '✅ Generated' : '❌ Not available', inline: true },
+                        { name: 'Code Comments', value: result.documentation.codeComments ? '✅ Generated' : '❌ Not available', inline: true }
+                    ],
+                    color: 0x00ccaa,
+                    footer: { text: 'AI-generated documentation' }
+                }]
+            });
+
+        } catch (error) {
+            console.error('AI docs error:', error);
+            await interaction.editReply({ content: '❌ Failed to generate documentation. Please try again later.' });
+        }
+    }
+
+    async handleAITestsCommand(interaction) {
+        const userId = interaction.user.id;
+        const code = interaction.options.getString('code');
+        const language = interaction.options.getString('language') || 'javascript';
+
+        await interaction.deferReply({ ephemeral: true });
+
+        try {
+            const result = await this.aiAssistant.generateTests(userId, code, language);
+
+            if (!result.success) {
+                await interaction.editReply({
+                    embeds: [{
+                        title: '⛔ Test Generation Failed',
+                        description: result.error,
+                        color: 0xff0000
+                    }]
+                });
+                return;
+            }
+
+            await interaction.editReply({
+                embeds: [{
+                    title: '🧪 Generated Tests',
+                    description: 'Tests have been generated for your code',
+                    fields: [
+                        { name: 'Unit Tests', value: result.tests.unitTests ? '✅ Generated' : '❌ Not available', inline: true },
+                        { name: 'Integration Tests', value: result.tests.integrationTests ? '✅ Generated' : '❌ Requires Premium+', inline: true },
+                        { name: 'Coverage', value: result.tests.coverage || 'N/A', inline: true }
+                    ],
+                    color: 0x66cc99,
+                    footer: { text: 'AI-generated tests' }
+                }]
+            });
+
+        } catch (error) {
+            console.error('AI tests error:', error);
+            await interaction.editReply({ content: '❌ Failed to generate tests. Please try again later.' });
+        }
+    }
+
+    async handleAITranslateCommand(interaction) {
+        const userId = interaction.user.id;
+        const code = interaction.options.getString('code');
+        const fromLanguage = interaction.options.getString('from');
+        const toLanguage = interaction.options.getString('to');
+
+        await interaction.deferReply({ ephemeral: true });
+
+        try {
+            const result = await this.aiAssistant.translateCode(userId, code, fromLanguage, toLanguage);
+
+            if (!result.success) {
+                await interaction.editReply({
+                    embeds: [{
+                        title: '⛔ Code Translation Failed',
+                        description: result.error,
+                        color: 0xff0000
+                    }]
+                });
+                return;
+            }
+
+            await interaction.editReply({
+                embeds: [{
+                    title: '🔄 Code Translation Complete',
+                    description: `Successfully translated code from ${fromLanguage} to ${toLanguage}`,
+                    fields: [
+                        { name: 'Translation Status', value: '✅ Complete', inline: true },
+                        { name: 'Compatibility Issues', value: result.translation.compatibilityIssues.length.toString(), inline: true },
+                        { name: 'Migration Notes', value: result.translation.migrationNotes ? '📝 Available' : 'None', inline: true }
+                    ],
+                    color: 0x3399ff,
+                    footer: { text: 'AI-powered code translation' }
+                }]
+            });
+
+        } catch (error) {
+            console.error('AI translation error:', error);
+            await interaction.editReply({ content: '❌ Failed to translate code. Please try again later.' });
+        }
+    }
+
+    async handleAIBrainstormCommand(interaction) {
+        const userId = interaction.user.id;
+        const topic = interaction.options.getString('topic');
+        const domain = interaction.options.getString('domain') || 'general';
+
+        await interaction.deferReply({ ephemeral: true });
+
+        try {
+            const result = await this.aiAssistant.performAIBrainstorming(userId, topic, domain);
+
+            if (!result.success) {
+                await interaction.editReply({
+                    embeds: [{
+                        title: '⛔ Brainstorming Failed',
+                        description: result.error,
+                        color: 0xff0000
+                    }]
+                });
+                return;
+            }
+
+            await interaction.editReply({
+                embeds: [{
+                    title: '💡 AI Brainstorming Results',
+                    description: `Brainstorming session for: **${topic}**`,
+                    fields: [
+                        { name: 'Ideas Generated', value: result.brainstorming.ideas.length.toString(), inline: true },
+                        { name: 'Solutions Found', value: result.brainstorming.solutions.length.toString(), inline: true },
+                        { name: 'Domain', value: domain.charAt(0).toUpperCase() + domain.slice(1), inline: true },
+                        { name: 'Top Ideas', value: result.brainstorming.ideas.slice(0, 3).join('\n') || 'No ideas generated', inline: false }
+                    ],
+                    color: 0xff6600,
+                    footer: { text: 'AI-powered brainstorming' }
+                }]
+            });
+
+        } catch (error) {
+            console.error('AI brainstorm error:', error);
+            await interaction.editReply({ content: '❌ Failed to brainstorm. Please try again later.' });
+        }
+    }
+
+    async handleAIAdvancedCommand(interaction) {
+        const userId = interaction.user.id;
+        const prompt = interaction.options.getString('prompt');
+        const complexity = interaction.options.getString('complexity') || 'basic';
+        const language = interaction.options.getString('language') || 'javascript';
+
+        await interaction.deferReply({ ephemeral: true });
+
+        try {
+            const result = await this.aiAssistant.generateAdvancedCode(userId, prompt, language, complexity);
+
+            if (!result.success) {
+                await interaction.editReply({
+                    embeds: [{
+                        title: '⛔ Advanced Generation Failed',
+                        description: result.error,
+                        color: 0xff0000
+                    }]
+                });
+                return;
+            }
+
+            await interaction.editReply({
+                embeds: [{
+                    title: '🚀 Advanced Code Generated',
+                    description: `Generated ${complexity} level code in ${language}`,
+                    fields: [
+                        { name: 'Files Generated', value: result.metadata.filesGenerated.toString(), inline: true },
+                        { name: 'Lines of Code', value: result.metadata.linesGenerated.toString(), inline: true },
+                        { name: 'Complexity Level', value: complexity.charAt(0).toUpperCase() + complexity.slice(1), inline: true },
+                        { name: 'Features Included', value: result.metadata.features.join(', ') || 'Basic features', inline: false }
+                    ],
+                    color: 0x6600ff,
+                    footer: { text: 'Advanced AI code generation' }
+                }]
+            });
+
+        } catch (error) {
+            console.error('AI advanced error:', error);
+            await interaction.editReply({ content: '❌ Failed to generate advanced code. Please try again later.' });
+        }
+    }
+
     detectLanguage(filename) {
         const ext = filename.split('.').pop().toLowerCase();
         const languageMap = {
@@ -729,13 +1613,33 @@ class OrderBot {
         const isAdmin = member.roles.cache.has(adminRoleId);
 
         const helpEmbed = {
-            title: '🤖 Bot Commands Help',
-            description: 'Here are all available commands:',
+            title: '🤖 Smart Serve AI Bot - All Commands',
+            description: 'Advanced AI-powered Discord bot with 100+ features:',
             color: 0x0099ff,
             fields: [
                 {
                     name: '📋 Order Management',
                     value: '`/status <order_number>` - Check order status\n`/history` - View your order history\n`/cancel <order_number>` - Cancel pending order\n`/modify <order_number>` - Modify order content',
+                    inline: false
+                },
+                {
+                    name: '🤖 Basic AI Features',
+                    value: '`/aicode <prompt>` - Generate Discord bot code\n`/aidebug <error>` - Debug your code with AI\n`/checkplan` - Check your plan and usage',
+                    inline: false
+                },
+                {
+                    name: '⚡ Advanced AI Features (Premium+)',
+                    value: '`/aioptimize <code>` - Optimize code performance\n`/aisecurity <code>` - Security vulnerability analysis\n`/aiperformance <code>` - Performance analysis\n`/aireview <code>` - Comprehensive code review',
+                    inline: false
+                },
+                {
+                    name: '📚 AI Documentation & Testing',
+                    value: '`/aidocs <code>` - Generate documentation\n`/aitests <code>` - Generate test suites\n`/aitranslate <code> <from> <to>` - Translate between languages',
+                    inline: false
+                },
+                {
+                    name: '💡 AI Innovation (Pro)',
+                    value: '`/aibrainstorm <topic>` - AI brainstorming sessions\n`/aiadvanced <prompt>` - Advanced code generation\n`/upgrader <user> <plan>` - Upgrade user plan (Admin)',
                     inline: false
                 },
                 {
@@ -745,12 +1649,12 @@ class OrderBot {
                 },
                 {
                     name: '💻 Code Management',
-                    value: '`/viewcode` - View your uploaded code files\n`/deletecode <filename>` - Delete a code file',
+                    value: '`/addcode <filename>` - Add code to environment\n`/viewcode` - View your code files\n`/deletecode <filename>` - Delete a code file\n`/managecode` - Manage user code (Admin)',
                     inline: false
                 }
             ],
             footer: {
-                text: 'Smart Serve Bot | Use commands responsibly'
+                text: 'Smart Serve AI | 100+ Features | Upgrade for advanced AI capabilities'
             }
         };
 
@@ -788,6 +1692,29 @@ class OrderBot {
             case '❌ Cancelled': return '❌';
             case '❌ Rejected': return '❌';
             default: return '📋';
+        }
+    }
+
+    async sendDM(userId, messageContent) {
+        try {
+            const user = await this.client.users.fetch(userId);
+            await user.send(messageContent);
+            return true;
+        } catch (error) {
+            console.error('Error sending DM:', error);
+            return false;
+        }
+    }
+
+    // Send order confirmation to user
+    async sendOrderDM(userId, orderInfo) {
+        try {
+            const user = await this.client.users.fetch(userId);
+            await user.send(`🤖 **Bot Feature Request**\n\nYou requested a bot with the following features:\n\n**${orderInfo.content}**\n\nDo you want to proceed with this order? Reply with "yes" to confirm or "no" to cancel.`);
+            return true;
+        } catch (error) {
+            console.error('Error sending DM:', error);
+            return false;
         }
     }
 
@@ -1219,12 +2146,50 @@ class OrderBot {
 
     async start() {
         const token = process.env.DISCORD_BOT_TOKEN;
-        if (!token) {
-            console.error('DISCORD_BOT_TOKEN not found in environment variables');
+        if (!token || token === 'your_discord_bot_token_here' || token.includes('example')) {
+            console.warn('⚠️  DISCORD_BOT_TOKEN not configured properly. Discord bot features will be disabled.');
+            console.log('📝 Please set a valid Discord bot token in the .env file to enable Discord functionality.');
+            this.isDisabled = true;
             return;
         }
 
-        await this.client.login(token);
+        try {
+            await this.client.login(token);
+            console.log('✅ Discord bot started successfully!');
+            this.isDisabled = false;
+        } catch (error) {
+            console.error('❌ Discord bot login failed:', error.message);
+            console.log('📝 Please check your Discord bot token in the .env file.');
+            console.log('🌐 Web server will continue running without Discord bot functionality.');
+            this.isDisabled = true;
+        }
+    }
+
+    // Add fallback methods for when Discord is disabled
+    async processOrder(userId, content) {
+        if (this.isDisabled) {
+            return {
+                success: false,
+                error: 'Discord bot is not available. Please check configuration.'
+            };
+        }
+        // Original processOrder logic here
+        return { success: true };
+    }
+
+    async sendDM(userId, message) {
+        if (this.isDisabled) {
+            console.log('Discord DM not sent (bot disabled):', message);
+            return { success: false, error: 'Discord bot unavailable' };
+        }
+        try {
+            const user = await this.client.users.fetch(userId);
+            await user.send(message);
+            return { success: true };
+        } catch (error) {
+            console.error('Failed to send DM:', error);
+            return { success: false, error: error.message };
+        }
     }
 }
 

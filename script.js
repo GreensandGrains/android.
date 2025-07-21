@@ -120,7 +120,204 @@ function setupParallax() {
     });
 }
 
-// Contact form handling
+// Enhanced contact form handling with Discord integration
+function setupContactForm() {
+    const contactForm = document.getElementById('contactForm');
+    if (!contactForm) return;
+
+    // Add focus animations to form inputs
+    const formInputs = contactForm.querySelectorAll('input, textarea');
+    formInputs.forEach(input => {
+        const formGroup = input.parentElement;
+        const formLine = formGroup.querySelector('.form-line');
+
+        input.addEventListener('focus', () => {
+            formGroup.classList.add('focused');
+            if (formLine) {
+                formLine.style.transform = 'scaleX(1)';
+                formLine.style.background = 'var(--gradient-primary)';
+            }
+        });
+
+        input.addEventListener('blur', () => {
+            if (!input.value) {
+                formGroup.classList.remove('focused');
+                if (formLine) {
+                    formLine.style.transform = 'scaleX(0)';
+                }
+            }
+        });
+
+        input.addEventListener('input', () => {
+            if (input.value) {
+                formGroup.classList.add('has-value');
+            } else {
+                formGroup.classList.remove('has-value');
+            }
+        });
+    });
+
+    contactForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const submitBtn = document.getElementById('contactSubmit');
+        const btnText = submitBtn.querySelector('.btn-text');
+        const btnLoader = submitBtn.querySelector('.btn-loader');
+
+        // Show loading animation
+        btnText.style.display = 'none';
+        btnLoader.style.display = 'flex';
+        submitBtn.disabled = true;
+        submitBtn.style.transform = 'scale(0.95)';
+
+        const formData = new FormData(contactForm);
+        const data = Object.fromEntries(formData.entries());
+
+        try {
+            const response = await fetch('/api/contact', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Success animation
+                submitBtn.style.background = '#22c55e';
+                btnLoader.innerHTML = '<i class="fas fa-check"></i>';
+                
+                setTimeout(() => {
+                    showNotification('Message sent successfully! 🎉', 'success');
+                    contactForm.reset();
+                    formInputs.forEach(input => {
+                        input.parentElement.classList.remove('focused', 'has-value');
+                        const formLine = input.parentElement.querySelector('.form-line');
+                        if (formLine) formLine.style.transform = 'scaleX(0)';
+                    });
+                }, 1000);
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('Contact form error:', error);
+            submitBtn.style.background = '#ef4444';
+            btnLoader.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+            showNotification('Failed to send message. Please try again.', 'error');
+        } finally {
+            setTimeout(() => {
+                btnText.style.display = 'block';
+                btnLoader.style.display = 'none';
+                submitBtn.disabled = false;
+                submitBtn.style.transform = 'scale(1)';
+                submitBtn.style.background = '';
+            }, 2000);
+        }
+    });
+}
+
+// Notification system
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <div class="notification-content">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+            <span>${message}</span>
+        </div>
+        <button class="notification-close" onclick="this.parentElement.remove()">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+
+    // Add notification styles if not exist
+    if (!document.getElementById('notification-styles')) {
+        const style = document.createElement('style');
+        style.id = 'notification-styles';
+        style.textContent = `
+            .notification {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: rgba(26, 26, 26, 0.95);
+                color: white;
+                padding: 16px 20px;
+                border-radius: 12px;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                backdrop-filter: blur(10px);
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+                z-index: 10000;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                min-width: 300px;
+                animation: notificationSlideIn 0.4s ease-out;
+                transform: translateX(0);
+            }
+            
+            @keyframes notificationSlideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            
+            .notification-success { border-color: #22c55e; }
+            .notification-error { border-color: #ef4444; }
+            .notification-info { border-color: #60a5fa; }
+            
+            .notification-content {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                flex: 1;
+            }
+            
+            .notification-close {
+                background: none;
+                border: none;
+                color: rgba(255, 255, 255, 0.7);
+                cursor: pointer;
+                font-size: 14px;
+                padding: 4px;
+                border-radius: 50%;
+                transition: all 0.2s ease;
+            }
+            
+            .notification-close:hover {
+                color: white;
+                background: rgba(255, 255, 255, 0.1);
+            }
+            
+            .form-group {
+                position: relative;
+            }
+            
+            .form-line {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                height: 2px;
+                background: var(--gradient-primary);
+                transform: scaleX(0);
+                transition: transform 0.3s ease;
+                transform-origin: left;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    document.body.appendChild(notification);
+
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.style.animation = 'notificationSlideIn 0.4s ease-out reverse';
+            setTimeout(() => notification.remove(), 400);
+        }
+    }, 5000);
+}
 function setupContactForm() {
     const form = document.querySelector('.contact-form');
 
@@ -247,16 +444,35 @@ function isMobileDevice() {
 function updateNavigation() {
     const loginBtn = document.getElementById('login-btn');
     const userProfile = document.getElementById('user-profile');
+    const userData = localStorage.getItem('userData');
 
-    if (window.authSystem && window.authSystem.isAuthenticated()) {
-        const user = window.authSystem.getCurrentUser();
-        if (loginBtn) loginBtn.style.display = 'none';
-        if (userProfile) {
-            userProfile.style.display = 'flex';
-            const userAvatar = document.getElementById('user-avatar');
-            const userName = document.getElementById('user-name');
-            if (userAvatar) userAvatar.src = user.avatar || 'https://via.placeholder.com/40x40/ffffff/000000?text=U';
-            if (userName) userName.textContent = user.username || 'User';
+    if (userData) {
+        try {
+            const user = JSON.parse(userData);
+            if (loginBtn) loginBtn.style.display = 'none';
+            if (userProfile) {
+                userProfile.style.display = 'flex';
+                const userAvatar = document.getElementById('user-avatar');
+                const userName = document.getElementById('user-name');
+                
+                // Construct proper Discord avatar URL
+                let avatarUrl;
+                if (user.avatar) {
+                    avatarUrl = user.avatar.startsWith('http') 
+                        ? user.avatar 
+                        : `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=256`;
+                } else {
+                    const discriminator = user.discriminator || (parseInt(user.id) % 5);
+                    avatarUrl = `https://cdn.discordapp.com/embed/avatars/${discriminator % 5}.png`;
+                }
+                
+                if (userAvatar) userAvatar.src = avatarUrl;
+                if (userName) userName.textContent = user.username || 'User';
+            }
+        } catch (error) {
+            console.error('Error parsing user data:', error);
+            if (loginBtn) loginBtn.style.display = 'flex';
+            if (userProfile) userProfile.style.display = 'none';
         }
     } else {
         if (loginBtn) loginBtn.style.display = 'flex';

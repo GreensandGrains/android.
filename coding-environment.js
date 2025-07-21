@@ -1,87 +1,236 @@
-
 // Global variables
-let currentFile = 'index.js';
+let currentProject = null;
 let openFiles = new Map();
 let fileContents = new Map();
-let syntaxHighlighter = null;
-let autocompleteEnabled = true;
 let isDarkTheme = true;
+let isRunning = false;
 
-// JavaScript keywords and functions for autocomplete
-const jsKeywords = [
-    'const', 'let', 'var', 'function', 'async', 'await', 'return', 'if', 'else', 
-    'for', 'while', 'do', 'switch', 'case', 'break', 'continue', 'try', 'catch', 
-    'throw', 'new', 'class', 'extends', 'import', 'export', 'default', 'typeof',
-    'instanceof', 'in', 'of', 'this', 'super', 'static', 'get', 'set'
-];
+// File type configurations
+const FILE_TYPES = {
+    python: {
+        extension: '.py',
+        icon: 'fab fa-python',
+        language: 'python',
+        template: `# Python Bot Script
+def main():
+    print("Hello from Python!")
 
-const jsFunctions = [
-    'console.log()', 'console.error()', 'console.warn()', 'console.info()',
-    'setTimeout()', 'setInterval()', 'clearTimeout()', 'clearInterval()',
-    'parseInt()', 'parseFloat()', 'isNaN()', 'isFinite()',
-    'JSON.stringify()', 'JSON.parse()', 'Object.keys()', 'Object.values()',
-    'Array.isArray()', 'Array.from()', 'Array.of()',
-    'Math.random()', 'Math.floor()', 'Math.ceil()', 'Math.round()',
-    'Date.now()', 'new Date()', 'Promise.resolve()', 'Promise.reject()'
-];
+if __name__ == "__main__":
+    main()
+`
+    },
+    javascript: {
+        extension: '.js',
+        icon: 'fab fa-js-square',
+        language: 'javascript',
+        template: `// JavaScript Bot Script
+console.log("Hello from JavaScript!");
 
-const discordJSFunctions = [
-    'client.login()', 'client.on()', 'client.once()', 'client.emit()',
-    'message.reply()', 'message.channel.send()', 'message.delete()',
-    'interaction.reply()', 'interaction.followUp()', 'interaction.deferReply()',
-    'guild.members.cache', 'guild.channels.cache', 'guild.roles.cache',
-    'new EmbedBuilder()', 'new SlashCommandBuilder()', 'new ButtonBuilder()'
-];
+// Your bot code here
+function main() {
+    console.log("Bot is running!");
+}
 
-// Initialize the application
+main();
+`
+    },
+    text: {
+        extension: '.txt',
+        icon: 'fas fa-file-alt',
+        language: 'text',
+        template: '# Text file\n\nYour content here...'
+    },
+    env: {
+        extension: '.env',
+        icon: 'fas fa-cog',
+        language: 'bash',
+        template: '# Environment variables\nBOT_TOKEN=your_token_here\nDEBUG=true\n'
+    }
+};
+
+// Initialize the IDE
 document.addEventListener('DOMContentLoaded', function() {
     initializeIDE();
 });
 
 async function initializeIDE() {
-    // Show loading screen
     showLoadingScreen();
-    
-    // Simulate loading delay for smooth animation
+
+    // Simulate loading delay
     await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Hide loading screen
+
     hideLoadingScreen();
-    
+
     // Initialize components
-    initializeFileSystem();
-    initializeEditor();
-    initializeTerminal();
-    initializeResizeHandles();
-    initializeKeyboardShortcuts();
-    initializeContextMenu();
-    
-    // Load user authentication
+    initializeProject();
+    initializeEventListeners();
+    setupConsole();
     checkAuthentication();
-    
-    // Load user code from Discord or templates
-    await loadUserCodeFromDiscord();
-    
+
+    // Load project if specified
+    const urlParams = new URLSearchParams(window.location.search);
+    const projectId = urlParams.get('project');
+    const orderNumber = urlParams.get('order');
+
+    if (projectId || orderNumber) {
+        await loadProject(projectId || orderNumber);
+    } else {
+        showWelcomeScreen();
+    }
+
     console.log('🚀 Smart Serve IDE initialized successfully!');
 }
 
 function showLoadingScreen() {
     const loadingScreen = document.getElementById('loadingScreen');
-    loadingScreen.style.display = 'flex';
+    if (loadingScreen) {
+        loadingScreen.style.display = 'flex';
+    }
 }
 
 function hideLoadingScreen() {
     const loadingScreen = document.getElementById('loadingScreen');
-    loadingScreen.style.opacity = '0';
-    setTimeout(() => {
-        loadingScreen.style.display = 'none';
-    }, 500);
+    if (loadingScreen) {
+        loadingScreen.style.opacity = '0';
+        setTimeout(() => {
+            loadingScreen.style.display = 'none';
+        }, 500);
+    }
+}
+
+function initializeProject() {
+    // Initialize empty project
+    currentProject = {
+        id: generateProjectId(),
+        name: 'My Bot Project',
+        files: new Map(),
+        createdAt: Date.now(),
+        lastModified: Date.now()
+    };
+
+    updateProjectName();
+}
+
+function generateProjectId() {
+    return 'project_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+}
+
+function initializeEventListeners() {
+    // Console tab switching
+    const consoleTabs = document.querySelectorAll('.console-tab');
+    consoleTabs.forEach(tab => {
+        tab.addEventListener('click', () => switchConsoleTab(tab.dataset.panel));
+    });
+
+    // File modal
+    const fileModal = document.getElementById('fileModal');
+    if (fileModal) {
+        fileModal.addEventListener('click', (e) => {
+            if (e.target === fileModal) {
+                closeModal('fileModal');
+            }
+        });
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', handleKeyboardShortcuts);
+}
+
+function handleKeyboardShortcuts(e) {
+    if (e.ctrlKey || e.metaKey) {
+        switch (e.key) {
+            case 'n':
+                e.preventDefault();
+                createNewFile();
+                break;
+            case 'r':
+                e.preventDefault();
+                runCode();
+                break;
+            case '`':
+                e.preventDefault();
+                toggleConsole();
+                break;
+        }
+    }
+
+    if (e.key === 'F5') {
+        e.preventDefault();
+        runCode();
+    }
+}
+
+// Auto-save functionality
+let autoSaveTimeout;
+function autoSaveProject() {
+    clearTimeout(autoSaveTimeout);
+    autoSaveTimeout = setTimeout(async () => {
+        await saveProjectSilently();
+    }, 2000); // Save after 2 seconds of inactivity
+}
+
+async function saveProjectSilently() {
+    try {
+        const projectData = {
+            ...currentProject,
+            files: Array.from(currentProject.files.entries())
+        };
+
+        localStorage.setItem(`project_${currentProject.id}`, JSON.stringify(projectData));
+
+        // Save to server and add to bots gallery
+        const sessionToken = sessionStorage.getItem('sessionToken');
+        if (sessionToken) {
+            await saveProjectToServer(projectData);
+            await addToBotGallery(projectData);
+        }
+
+        // Update UI to show saved status
+        updateSaveStatus('saved');
+
+    } catch (error) {
+        console.error('Auto-save error:', error);
+        updateSaveStatus('error');
+    }
+}
+
+async function addToBotGallery(projectData) {
+    try {
+        const response = await fetch('/api/bots/save', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${sessionStorage.getItem('sessionToken')}`
+            },
+            body: JSON.stringify({
+                projectId: projectData.id,
+                name: projectData.name,
+                description: `Auto-saved bot project: ${projectData.name}`,
+                files: projectData.files,
+                language: projectData.language || 'javascript',
+                status: '🟢 Ready'
+            })
+        });
+
+        if (response.ok) {
+            console.log('Project added to bot gallery');
+        }
+    } catch (error) {
+        console.error('Error adding to bot gallery:', error);
+    }
+}
+
+function updateSaveStatus(status) {
+    const statusElement = document.querySelector('.project-status .status-dot');
+    if (statusElement) {
+        statusElement.className = `status-dot ${status === 'saved' ? 'online' : status === 'saving' ? 'away' : 'offline'}`;
+    }
 }
 
 function checkAuthentication() {
     const userData = localStorage.getItem('userData');
     const sessionToken = sessionStorage.getItem('sessionToken');
-    
+
     if (userData && sessionToken) {
         try {
             const user = JSON.parse(userData);
@@ -92,301 +241,367 @@ function checkAuthentication() {
         } catch (error) {
             console.error('Error parsing user data:', error);
         }
+    }
+}
+
+function redirectToBuilder() {
+    // Redirect to bot builder instead of home
+    const userData = localStorage.getItem('userData');
+    if (userData) {
+        window.location.href = 'bot-builder.html';
     } else {
-        // Redirect to login if not authenticated
         window.location.href = 'login.html';
     }
 }
 
-// File System Management
-function initializeFileSystem() {
-    // Initialize default files
-    fileContents.set('index.js', getDefaultFileContent('javascript'));
-    fileContents.set('package.json', getDefaultFileContent('json'));
-    fileContents.set('README.md', getDefaultFileContent('markdown'));
-    
-    // Open default file
-    openFiles.set('index.js', { type: 'javascript', modified: false });
-    
-    // Set up file tree event listeners
-    setupFileTreeEvents();
-    
-    console.log('📁 File system initialized');
+function showWelcomeScreen() {
+    const welcomeScreen = document.getElementById('welcomeScreen');
+    const emptyState = document.getElementById('emptyState');
+
+    if (welcomeScreen) welcomeScreen.style.display = 'flex';
+    if (emptyState) emptyState.style.display = 'flex';
 }
 
-function setupFileTreeEvents() {
-    const fileTree = document.getElementById('fileTree');
-    
-    fileTree.addEventListener('click', function(e) {
-        const treeItem = e.target.closest('.tree-item');
-        if (!treeItem) return;
-        
-        if (treeItem.classList.contains('folder')) {
-            toggleFolder(treeItem);
-        } else if (treeItem.classList.contains('file')) {
-            const fileName = treeItem.getAttribute('data-name');
-            const fileType = treeItem.getAttribute('data-type');
-            openFile(fileName, fileType);
+function hideWelcomeScreen() {
+    const welcomeScreen = document.getElementById('welcomeScreen');
+    const emptyState = document.getElementById('emptyState');
+
+    if (welcomeScreen) welcomeScreen.style.display = 'none';
+    if (emptyState) emptyState.style.display = 'none';
+}
+
+// File Management
+function createNewFile() {
+    document.getElementById('fileModal').style.display = 'flex';
+    document.getElementById('fileName').focus();
+}
+
+function createFileOfType(type) {
+    const fileType = FILE_TYPES[type];
+    if (!fileType) return;
+
+    const fileName = prompt(`Enter ${type} file name:`, `main${fileType.extension}`);
+    if (!fileName) return;
+
+    const finalFileName = fileName.endsWith(fileType.extension) ? fileName : fileName + fileType.extension;
+
+    createFileWithContent(finalFileName, type, fileType.template);
+}
+
+function createFile() {
+    const fileName = document.getElementById('fileName').value.trim();
+    const fileType = document.getElementById('fileType').value;
+
+    if (!fileName) {
+        alert('Please enter a file name');
+        return;
+    }
+
+    const config = FILE_TYPES[fileType];
+    const finalFileName = fileName.endsWith(config.extension) ? fileName : fileName + config.extension;
+
+    createFileWithContent(finalFileName, fileType, config.template);
+    closeModal('fileModal');
+}
+
+function createFileWithContent(fileName, type, content) {
+    if (currentProject.files.has(fileName)) {
+        alert('File already exists');
+        return;
+    }
+
+    const fileData = {
+        name: fileName,
+        type: type,
+        content: content,
+        language: FILE_TYPES[type].language,
+        createdAt: Date.now(),
+        lastModified: Date.now()
+    };
+
+    currentProject.files.set(fileName, fileData);
+    fileContents.set(fileName, content);
+
+    addFileToExplorer(fileName, type);
+    openFileInEditor(fileName);
+    hideWelcomeScreen();
+
+    showNotification(`File "${fileName}" created successfully`, 'success');
+}
+
+function addFileToExplorer(fileName, type) {
+    const fileExplorer = document.getElementById('fileExplorer');
+    const emptyState = document.getElementById('emptyState');
+
+    if (emptyState) emptyState.style.display = 'none';
+
+    const fileItem = document.createElement('div');
+    fileItem.className = 'file-item';
+    fileItem.dataset.fileName = fileName;
+    fileItem.onclick = () => openFileInEditor(fileName);
+
+    // Add right-click context menu
+    fileItem.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        showFileContextMenu(e, fileName);
+    });
+
+    const config = FILE_TYPES[type];
+    fileItem.innerHTML = `
+        <i class="${config.icon} file-icon ${type}"></i>
+        <span class="file-name">${fileName}</span>
+        <span class="main-file-indicator" style="display: none;">⭐</span>
+    `;
+
+    fileExplorer.appendChild(fileItem);
+}
+
+// Context menu for file operations
+function showFileContextMenu(event, fileName) {
+    // Remove existing context menu
+    const existingMenu = document.getElementById('file-context-menu');
+    if (existingMenu) existingMenu.remove();
+
+    const contextMenu = document.createElement('div');
+    contextMenu.id = 'file-context-menu';
+    contextMenu.className = 'context-menu';
+    contextMenu.style.cssText = `
+        position: fixed;
+        top: ${event.clientY}px;
+        left: ${event.clientX}px;
+        background: var(--secondary-black);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        padding: 8px 0;
+        z-index: 10000;
+        min-width: 180px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    `;
+
+    const menuItems = [
+        {
+            icon: 'fas fa-play',
+            text: 'Set as Main File',
+            action: () => setMainFile(fileName)
+        },
+        {
+            icon: 'fas fa-edit',
+            text: 'Rename',
+            action: () => renameFile(fileName)
+        },
+        {
+            icon: 'fas fa-trash',
+            text: 'Delete',
+            action: () => deleteFile(fileName)
+        }
+    ];
+
+    menuItems.forEach(item => {
+        const menuItem = document.createElement('div');
+        menuItem.className = 'context-menu-item';
+        menuItem.innerHTML = `
+            <i class="${item.icon}"></i>
+            <span>${item.text}</span>
+        `;
+        menuItem.onclick = () => {
+            item.action();
+            contextMenu.remove();
+        };
+        contextMenu.appendChild(menuItem);
+    });
+
+    document.body.appendChild(contextMenu);
+
+    // Close menu on click outside
+    setTimeout(() => {
+        document.addEventListener('click', function closeMenu() {
+            contextMenu.remove();
+            document.removeEventListener('click', closeMenu);
+        });
+    }, 100);
+}
+
+// Set main file for execution
+function setMainFile(fileName) {
+    // Remove main file indicator from all files
+    document.querySelectorAll('.main-file-indicator').forEach(indicator => {
+        indicator.style.display = 'none';
+    });
+
+    // Add main file indicator to selected file
+    const fileItem = document.querySelector(`[data-file-name="${fileName}"]`);
+    if (fileItem) {
+        const indicator = fileItem.querySelector('.main-file-indicator');
+        if (indicator) {
+            indicator.style.display = 'inline';
+        }
+    }
+
+    // Store main file in project
+    currentProject.mainFile = fileName;
+    showNotification(`Set "${fileName}" as main file`, 'success');
+}
+
+// Get main file for execution
+function getMainFile() {
+    // If main file is set, use it
+    if (currentProject.mainFile && currentProject.files.has(currentProject.mainFile)) {
+        return currentProject.mainFile;
+    }
+
+    // Otherwise use currently active file
+    const activeTab = document.querySelector('.tab.active');
+    if (activeTab) {
+        return activeTab.dataset.fileName;
+    }
+
+    // Fallback to first file
+    const firstFile = Array.from(currentProject.files.keys())[0];
+    return firstFile;
+}
+
+function openFileInEditor(fileName) {
+    const fileData = currentProject.files.get(fileName);
+    if (!fileData) return;
+
+    // Update file explorer selection
+    document.querySelectorAll('.file-item').forEach(item => {
+        item.classList.remove('active');
+        if (item.dataset.fileName === fileName) {
+            item.classList.add('active');
         }
     });
+
+    // Create or switch to tab
+    createOrSwitchTab(fileName, fileData);
+
+    // Create or switch to editor panel
+    createOrSwitchEditor(fileName, fileData);
 }
 
-function toggleFolder(folderElement) {
-    const isExpanded = folderElement.classList.contains('expanded');
-    
-    if (isExpanded) {
-        folderElement.classList.remove('expanded');
-        folderElement.classList.add('collapsed');
-    } else {
-        folderElement.classList.remove('collapsed');
-        folderElement.classList.add('expanded');
-    }
-}
+function createOrSwitchTab(fileName, fileData) {
+    const tabContainer = document.getElementById('tabContainer');
+    let existingTab = tabContainer.querySelector(`[data-file-name="${fileName}"]`);
 
-function openFile(fileName, fileType = 'javascript') {
-    // Add to open files if not already open
-    if (!openFiles.has(fileName)) {
-        openFiles.set(fileName, { type: fileType, modified: false });
-        
-        // Ensure file content exists
-        if (!fileContents.has(fileName)) {
-            fileContents.set(fileName, getDefaultFileContent(fileType));
-        }
-        
-        createTab(fileName, fileType);
-    }
-    
-    // Switch to this file
-    switchToFile(fileName);
-    
-    // Update file tree selection
-    updateFileTreeSelection(fileName);
-}
+    if (!existingTab) {
+        const tab = document.createElement('div');
+        tab.className = 'tab';
+        tab.dataset.fileName = fileName;
 
-function createTab(fileName, fileType) {
-    const tabBar = document.getElementById('tabBar');
-    const tabAdd = tabBar.querySelector('.tab-add');
-    
-    // Create new tab
-    const tab = document.createElement('div');
-    tab.className = 'tab';
-    tab.setAttribute('data-file', fileName);
-    tab.setAttribute('data-type', fileType);
-    
-    tab.innerHTML = `
-        <div class="tab-content">
-            <i class="${getFileIcon(fileType)} tab-icon"></i>
+        const config = FILE_TYPES[fileData.type];
+        tab.innerHTML = `
+            <i class="${config.icon} tab-icon"></i>
             <span class="tab-name">${fileName}</span>
             <button class="tab-close" onclick="closeTab('${fileName}')">
                 <i class="fas fa-times"></i>
             </button>
-        </div>
-    `;
-    
-    // Add click event
-    tab.addEventListener('click', (e) => {
-        if (!e.target.closest('.tab-close')) {
-            switchToFile(fileName);
-        }
-    });
-    
-    // Insert before tab-add button
-    tabBar.insertBefore(tab, tabAdd);
-    
-    // Create editor panel
-    createEditorPanel(fileName, fileType);
+        `;
+
+        tab.onclick = (e) => {
+            if (!e.target.closest('.tab-close')) {
+                openFileInEditor(fileName);
+            }
+        };
+
+        tabContainer.appendChild(tab);
+        existingTab = tab;
+    }
+
+    // Set active tab
+    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+    existingTab.classList.add('active');
 }
 
-function createEditorPanel(fileName, fileType) {
+function createOrSwitchEditor(fileName, fileData) {
     const editorContainer = document.getElementById('editorContainer');
-    
-    const panel = document.createElement('div');
-    panel.className = 'editor-panel';
-    panel.setAttribute('data-file', fileName);
-    
-    const content = fileContents.get(fileName) || getDefaultFileContent(fileType);
-    
-    panel.innerHTML = `
-        <div class="editor-header">
-            <div class="editor-info">
-                <span class="editor-file-name">${fileName}</span>
-                <span class="editor-file-path">~/Discord Bot Project/${fileName}</span>
-            </div>
-            <div class="editor-actions">
-                <button class="editor-btn" onclick="formatCode()" title="Format Code">
-                    <i class="fas fa-code"></i>
-                </button>
-                <button class="editor-btn" onclick="copyCode()" title="Copy All">
-                    <i class="fas fa-copy"></i>
-                </button>
-            </div>
-        </div>
-        <div class="editor-content">
-            <div class="line-numbers" id="lineNumbers-${fileName}">
-                <div class="line-number">1</div>
-            </div>
-            <textarea 
-                class="code-editor" 
-                id="editor-${fileName}"
-                spellcheck="false"
-                autocomplete="off"
-                placeholder="// Start coding here..."
-            >${content}</textarea>
-            <div class="syntax-overlay" id="syntaxOverlay-${fileName}"></div>
-        </div>
-    `;
-    
-    editorContainer.appendChild(panel);
-    
-    // Initialize editor for this panel
-    initializeEditorPanel(fileName, fileType);
-}
+    let existingPanel = editorContainer.querySelector(`[data-file-name="${fileName}"]`);
 
-function initializeEditorPanel(fileName, fileType) {
-    const editor = document.getElementById(`editor-${fileName}`);
-    const lineNumbers = document.getElementById(`lineNumbers-${fileName}`);
-    const syntaxOverlay = document.getElementById(`syntaxOverlay-${fileName}`);
-    
-    // Update line numbers
-    updateLineNumbers(editor, lineNumbers);
-    
-    // Apply syntax highlighting
-    applySyntaxHighlighting(editor, syntaxOverlay, fileType);
-    
-    // Add event listeners
-    editor.addEventListener('input', function(e) {
-        updateLineNumbers(editor, lineNumbers);
-        applySyntaxHighlighting(editor, syntaxOverlay, fileType);
-        markFileModified(fileName);
-        saveFileContent(fileName, editor.value);
-        
-        // Auto-completion
-        if (autocompleteEnabled) {
-            handleAutoComplete(e);
-        }
-    });
-    
-    editor.addEventListener('keydown', function(e) {
-        handleEditorKeyDown(e, fileName);
-    });
-    
-    editor.addEventListener('scroll', function() {
-        // Sync scroll with syntax overlay and line numbers
-        syntaxOverlay.scrollTop = editor.scrollTop;
-        syntaxOverlay.scrollLeft = editor.scrollLeft;
-        lineNumbers.scrollTop = editor.scrollTop;
-    });
-}
+    if (!existingPanel) {
+        const panel = document.createElement('div');
+        panel.className = 'editor-panel';
+        panel.dataset.fileName = fileName;
 
-function switchToFile(fileName) {
-    // Update current file
-    currentFile = fileName;
-    
-    // Update tab states
-    document.querySelectorAll('.tab').forEach(tab => {
-        tab.classList.remove('active');
-        if (tab.getAttribute('data-file') === fileName) {
-            tab.classList.add('active');
-        }
-    });
-    
-    // Update editor panel states
-    document.querySelectorAll('.editor-panel').forEach(panel => {
-        panel.classList.remove('active');
-        if (panel.getAttribute('data-file') === fileName) {
-            panel.classList.add('active');
-        }
-    });
-    
-    // Focus the editor
+        panel.innerHTML = `
+            <div class="editor-header">
+                <div class="editor-info">
+                    <span class="editor-file-name">${fileName}</span>
+                    <span class="editor-file-path">~/${currentProject.name}/${fileName}</span>
+                </div>
+                <div class="editor-actions">
+                    <button class="icon-btn" onclick="formatCode('${fileName}')" title="Format Code">
+                        <i class="fas fa-code"></i>
+                    </button>
+                    <button class="icon-btn" onclick="copyFileContent('${fileName}')" title="Copy All">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="editor-content">
+                <div class="line-numbers" id="lineNumbers-${fileName}"></div>
+                <textarea 
+                    class="code-editor" 
+                    id="editor-${fileName}"
+                    data-language="${fileData.language}"
+                    spellcheck="false"
+                    autocomplete="off"
+                    placeholder="Start coding here..."
+                >${fileData.content}</textarea>
+            </div>
+        `;
+
+        editorContainer.appendChild(panel);
+
+        // Initialize editor
+        initializeEditor(fileName, fileData);
+        existingPanel = panel;
+    }
+
+    // Set active panel
+    document.querySelectorAll('.editor-panel').forEach(panel => panel.classList.remove('active'));
+    existingPanel.classList.add('active');
+
+    // Focus editor
     const editor = document.getElementById(`editor-${fileName}`);
     if (editor) {
         setTimeout(() => editor.focus(), 100);
     }
 }
 
-function closeTab(fileName) {
-    // Don't close if it's the last tab
-    if (openFiles.size <= 1) {
-        showNotification('Cannot close the last tab', 'warning');
-        return;
-    }
-    
-    // Remove from open files
-    openFiles.delete(fileName);
-    
-    // Remove tab
-    const tab = document.querySelector(`.tab[data-file="${fileName}"]`);
-    if (tab) {
-        tab.remove();
-    }
-    
-    // Remove editor panel
-    const panel = document.querySelector(`.editor-panel[data-file="${fileName}"]`);
-    if (panel) {
-        panel.remove();
-    }
-    
-    // Switch to another open file
-    if (currentFile === fileName) {
-        const remainingFiles = Array.from(openFiles.keys());
-        if (remainingFiles.length > 0) {
-            switchToFile(remainingFiles[0]);
-        }
-    }
-}
+function initializeEditor(fileName, fileData) {
+    const editor = document.getElementById(`editor-${fileName}`);
+    const lineNumbers = document.getElementById(`lineNumbers-${fileName}`);
 
-// Editor Functionality
-function initializeEditor() {
-    // Initialize syntax highlighter
-    initializeSyntaxHighlighter();
-    
-    console.log('✏️ Editor initialized');
-}
+    if (!editor || !lineNumbers) return;
 
-function initializeSyntaxHighlighter() {
-    // Custom syntax highlighting patterns
-    const patterns = {
-        javascript: [
-            { pattern: /\b(const|let|var|function|async|await|return|if|else|for|while|do|switch|case|break|continue|try|catch|throw|new|class|extends|import|export|default|typeof|instanceof|in|of|this|super|static|get|set)\b/g, className: 'keyword' },
-            { pattern: /"([^"\\]|\\.)*"|'([^'\\]|\\.)*'|`([^`\\]|\\.)*`/g, className: 'string' },
-            { pattern: /\/\/.*$/gm, className: 'comment' },
-            { pattern: /\/\*[\s\S]*?\*\//g, className: 'comment' },
-            { pattern: /\b\d+\.?\d*\b/g, className: 'number' },
-            { pattern: /\b[a-zA-Z_$][a-zA-Z0-9_$]*(?=\s*\()/g, className: 'function' },
-            { pattern: /[+\-*/%=<>!&|^~?:]/g, className: 'operator' }
-        ],
-        json: [
-            { pattern: /"([^"\\]|\\.)*"/g, className: 'string' },
-            { pattern: /\b\d+\.?\d*\b/g, className: 'number' },
-            { pattern: /\b(true|false|null)\b/g, className: 'keyword' }
-        ],
-        css: [
-            { pattern: /\b[a-z-]+(?=\s*:)/gi, className: 'variable' },
-            { pattern: /"([^"\\]|\\.)*"|'([^'\\]|\\.)*'/g, className: 'string' },
-            { pattern: /\/\*[\s\S]*?\*\//g, className: 'comment' },
-            { pattern: /\b\d+\.?\d*(px|em|rem|%|vh|vw|pt|pc|in|cm|mm|ex|ch|fr)\b/g, className: 'number' }
-        ]
-    };
-    
-    syntaxHighlighter = { patterns };
-}
+    // Update line numbers
+    updateLineNumbers(editor, lineNumbers);
 
-function applySyntaxHighlighting(editor, overlay, fileType) {
-    if (!syntaxHighlighter || !syntaxHighlighter.patterns[fileType]) {
-        return;
-    }
-    
-    let code = editor.value;
-    const patterns = syntaxHighlighter.patterns[fileType];
-    
-    // Apply syntax highlighting
-    patterns.forEach(({ pattern, className }) => {
-        code = code.replace(pattern, `<span class="${className}">$&</span>`);
+    // Apply syntax highlighting based on language
+    applySyntaxHighlighting(editor, fileData.language);
+
+    // Add event listeners
+    editor.addEventListener('input', function(e) {
+        updateLineNumbers(editor, lineNumbers);
+        applySyntaxHighlighting(editor, fileData.language);
+
+        // Save content
+        fileData.content = editor.value;
+        fileData.lastModified = Date.now();
+        fileContents.set(fileName, editor.value);
+
+        // Mark as modified and trigger auto-save
+        markTabAsModified(fileName);
+        updateSaveStatus('saving');
+        autoSaveProject();
     });
-    
-    // Set the highlighted code
-    overlay.innerHTML = code;
+
+    editor.addEventListener('keydown', function(e) {
+        handleEditorKeyDown(e, fileName);
+    });
+
+    editor.addEventListener('scroll', function() {
+        lineNumbers.scrollTop = editor.scrollTop;
+    });
 }
 
 function updateLineNumbers(editor, lineNumbers) {
@@ -394,972 +609,814 @@ function updateLineNumbers(editor, lineNumbers) {
     const lineNumbersHtml = lines.map((_, index) => 
         `<div class="line-number">${index + 1}</div>`
     ).join('');
-    
+
     lineNumbers.innerHTML = lineNumbersHtml;
 }
 
+function applySyntaxHighlighting(editor, language) {
+    // Simple syntax highlighting using CSS classes
+    const content = editor.value;
+
+    // This would be enhanced with a proper syntax highlighter like Prism.js
+    // For now, we'll add basic highlighting through CSS classes
+    editor.className = `code-editor language-${language}`;
+}
+
 function handleEditorKeyDown(e, fileName) {
-    // Tab indentation
     if (e.key === 'Tab') {
         e.preventDefault();
         const editor = e.target;
         const start = editor.selectionStart;
         const end = editor.selectionEnd;
-        
-        // Insert tab characters
+
         const tabChar = '    '; // 4 spaces
         editor.value = editor.value.substring(0, start) + tabChar + editor.value.substring(end);
         editor.setSelectionRange(start + tabChar.length, start + tabChar.length);
+
+        // Trigger input event to update line numbers and content
+        editor.dispatchEvent(new Event('input'));
     }
-    
-    // Auto-close brackets and quotes
-    const autoClosePairs = {
-        '(': ')',
-        '[': ']',
-        '{': '}',
-        '"': '"',
-        "'": "'",
-        '`': '`'
-    };
-    
-    if (autoClosePairs[e.key]) {
-        const editor = e.target;
-        const start = editor.selectionStart;
-        const end = editor.selectionEnd;
-        
-        if (start === end) { // No selection
-            e.preventDefault();
-            const closeChar = autoClosePairs[e.key];
-            editor.value = editor.value.substring(0, start) + e.key + closeChar + editor.value.substring(end);
-            editor.setSelectionRange(start + 1, start + 1);
+}
+
+function markTabAsModified(fileName) {
+    const tab = document.querySelector(`[data-file-name="${fileName}"]`);
+    if (tab) {
+        const tabName = tab.querySelector('.tab-name');
+        if (tabName && !tabName.textContent.endsWith('*')) {
+            tabName.textContent += '*';
         }
     }
 }
 
-function handleAutoComplete(e) {
-    const editor = e.target;
-    const cursorPos = editor.selectionStart;
-    const textBeforeCursor = editor.value.substring(0, cursorPos);
-    const currentWord = textBeforeCursor.split(/\s/).pop();
-    
-    if (currentWord.length >= 2) {
-        const suggestions = [...jsKeywords, ...jsFunctions, ...discordJSFunctions]
-            .filter(item => item.toLowerCase().startsWith(currentWord.toLowerCase()))
-            .slice(0, 10);
-        
-        if (suggestions.length > 0) {
-            showAutocompleteSuggestions(suggestions, editor);
-        } else {
-            hideAutocompleteSuggestions();
-        }
+function closeTab(fileName) {
+    const tab = document.querySelector(`[data-file-name="${fileName}"]`);
+    const panel = document.querySelector(`[data-file-name="${fileName}"]`);
+
+    if (tab) tab.remove();
+    if (panel) panel.remove();
+
+    // If no more tabs, show welcome screen
+    const remainingTabs = document.querySelectorAll('.tab');
+    if (remainingTabs.length === 0) {
+        showWelcomeScreen();
     } else {
-        hideAutocompleteSuggestions();
+        // Open the first remaining tab
+        const firstTab = remainingTabs[0];
+        const firstFileName = firstTab.dataset.fileName;
+        openFileInEditor(firstFileName);
     }
 }
 
-function showAutocompleteSuggestions(suggestions, editor) {
-    let popup = document.getElementById('autocompletePopup');
-    if (!popup) return;
-    
-    // Clear existing items
-    popup.innerHTML = '';
-    
-    // Add suggestions
-    suggestions.forEach(suggestion => {
-        const item = document.createElement('div');
-        item.className = 'autocomplete-item';
-        item.setAttribute('data-value', suggestion);
-        item.innerHTML = `
-            <i class="fas fa-code"></i>
-            <span>${suggestion}</span>
-        `;
-        
-        item.addEventListener('click', () => {
-            insertAutocompleteSuggestion(suggestion, editor);
-        });
-        
-        popup.appendChild(item);
-    });
-    
-    // Position popup
-    const rect = editor.getBoundingClientRect();
-    popup.style.left = `${rect.left}px`;
-    popup.style.top = `${rect.top + 20}px`;
-    popup.style.display = 'block';
+// Console Management
+function setupConsole() {
+    addConsoleOutput('Welcome to Smart Serve IDE Console!', 'info');
+    addConsoleOutput('Your code output will appear here when you run it.', 'info');
 }
 
-function hideAutocompleteSuggestions() {
-    const popup = document.getElementById('autocompletePopup');
-    if (popup) {
-        popup.style.display = 'none';
-    }
-}
-
-function insertAutocompleteSuggestion(suggestion, editor) {
-    const cursorPos = editor.selectionStart;
-    const textBeforeCursor = editor.value.substring(0, cursorPos);
-    const words = textBeforeCursor.split(/\s/);
-    const currentWord = words.pop();
-    const textAfterCurrentWord = words.join(' ') + (words.length > 0 ? ' ' : '');
-    
-    const newText = textAfterCurrentWord + suggestion + editor.value.substring(cursorPos);
-    editor.value = newText;
-    editor.setSelectionRange(textAfterCurrentWord.length + suggestion.length, textAfterCurrentWord.length + suggestion.length);
-    
-    hideAutocompleteSuggestions();
-    editor.focus();
-}
-
-// Terminal Functionality
-function initializeTerminal() {
-    const terminalInput = document.getElementById('terminalInput');
-    
-    terminalInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            const command = this.value.trim();
-            if (command) {
-                executeCommand(command);
-                this.value = '';
-            }
+function switchConsoleTab(panelName) {
+    // Update tab states
+    document.querySelectorAll('.console-tab').forEach(tab => {
+        tab.classList.remove('active');
+        if (tab.dataset.panel === panelName) {
+            tab.classList.add('active');
         }
     });
-    
-    // Add some welcome messages
-    addTerminalOutput('Welcome to Smart Serve IDE Terminal!', 'info');
-    addTerminalOutput('Type "help" for available commands', 'info');
-    
-    console.log('💻 Terminal initialized');
+
+    // Update panel states
+    document.querySelectorAll('.console-view').forEach(view => {
+        view.classList.remove('active');
+        if (view.dataset.panel === panelName) {
+            view.classList.add('active');
+        }
+    });
 }
 
-function executeCommand(command) {
-    addTerminalOutput(`smartserve@discord-bot:~$ ${command}`, 'command');
-    
-    // Simple command processing
-    const [cmd, ...args] = command.split(' ');
-    
-    switch (cmd.toLowerCase()) {
-        case 'help':
-            showHelpCommands();
-            break;
-        case 'clear':
-            clearTerminal();
-            break;
-        case 'ls':
-            listFiles();
-            break;
-        case 'pwd':
-            addTerminalOutput('/home/smartserve/discord-bot', 'output');
-            break;
-        case 'whoami':
-            addTerminalOutput('smartserve', 'output');
-            break;
-        case 'date':
-            addTerminalOutput(new Date().toString(), 'output');
-            break;
-        case 'node':
-            if (args[0]) {
-                simulateNodeExecution(args[0]);
-            } else {
-                addTerminalOutput('Node.js REPL (simulated)', 'output');
-            }
-            break;
-        case 'npm':
-            handleNpmCommand(args);
-            break;
-        default:
-            addTerminalOutput(`Command not found: ${cmd}`, 'error');
-            addTerminalOutput('Type "help" for available commands', 'info');
-    }
+function addConsoleOutput(text, type = 'info') {
+    const outputContent = document.getElementById('outputContent');
+    if (!outputContent) return;
+
+    const outputLine = document.createElement('div');
+    outputLine.className = `output-line ${type}`;
+
+    const timestamp = new Date().toLocaleTimeString();
+    outputLine.innerHTML = `
+        <span class="output-time">[${timestamp}]</span>
+        <span class="output-text">${text}</span>
+    `;
+
+    outputContent.appendChild(outputLine);
+    outputContent.scrollTop = outputContent.scrollHeight;
 }
 
 function addTerminalOutput(text, type = 'output') {
     const terminalOutput = document.getElementById('terminalOutput');
-    const line = document.createElement('div');
-    line.className = `terminal-line ${type}`;
-    
-    if (type === 'command') {
-        line.innerHTML = `<span class="terminal-prefix">${text}</span>`;
-    } else {
-        line.textContent = text;
-    }
-    
-    // Remove cursor from last line
-    const existingCursor = terminalOutput.querySelector('.terminal-cursor');
-    if (existingCursor) {
-        existingCursor.remove();
-    }
-    
-    terminalOutput.appendChild(line);
-    
-    // Add new cursor
-    const cursorLine = document.createElement('div');
-    cursorLine.className = 'terminal-line';
-    cursorLine.innerHTML = `
-        <span class="terminal-prefix">smartserve@discord-bot:~$</span>
-        <span class="terminal-cursor">|</span>
-    `;
-    terminalOutput.appendChild(cursorLine);
-    
-    // Scroll to bottom
+    if (!terminalOutput) return;
+
+    const terminalLine = document.createElement('div');
+    terminalLine.className = `terminal-line ${type}`;
+    terminalLine.textContent = text;
+
+    terminalOutput.appendChild(terminalLine);
     terminalOutput.scrollTop = terminalOutput.scrollHeight;
 }
 
-function showHelpCommands() {
-    const commands = [
-        'Available commands:',
-        '  help     - Show this help message',
-        '  clear    - Clear terminal',
-        '  ls       - List files',
-        '  pwd      - Show current directory',
-        '  whoami   - Show current user',
-        '  date     - Show current date',
-        '  node     - Run Node.js (simulated)',
-        '  npm      - NPM commands (simulated)'
-    ];
-    
-    commands.forEach(cmd => addTerminalOutput(cmd, 'info'));
-}
+// Global variables for process management
+let currentProcess = null;
+let executionWebSocket = null;
+let inactivityTimer = null;
+let lastActivityTime = Date.now();
 
-function listFiles() {
-    const files = Array.from(fileContents.keys());
-    files.forEach(file => addTerminalOutput(file, 'output'));
-}
-
-function clearTerminal() {
-    const terminalOutput = document.getElementById('terminalOutput');
-    terminalOutput.innerHTML = `
-        <div class="terminal-line">
-            <span class="terminal-prefix">smartserve@discord-bot:~$</span>
-            <span class="terminal-cursor">|</span>
-        </div>
-    `;
-}
-
-function simulateNodeExecution(filename) {
-    addTerminalOutput(`Executing ${filename}...`, 'info');
-    
-    // Simulate execution delay
-    setTimeout(() => {
-        if (filename.includes('bot') || filename.includes('discord')) {
-            addTerminalOutput('🤖 Discord bot started successfully!', 'success');
-            addTerminalOutput('✅ Connected to Discord API', 'success');
-            addTerminalOutput('📡 Bot is now online and ready!', 'success');
-        } else {
-            addTerminalOutput('✅ Program executed successfully', 'success');
-        }
-    }, 1000);
-}
-
-function handleNpmCommand(args) {
-    const subCmd = args[0];
-    
-    switch (subCmd) {
-        case 'install':
-        case 'i':
-            simulateNpmInstall(args.slice(1));
-            break;
-        case 'start':
-            addTerminalOutput('Running npm start...', 'info');
-            simulateNodeExecution('index.js');
-            break;
-        case 'run':
-            const script = args[1];
-            addTerminalOutput(`Running npm run ${script}...`, 'info');
-            break;
-        default:
-            addTerminalOutput('npm help - show npm commands', 'info');
+// Project Actions
+function runCode() {
+    if (isRunning) {
+        stopCode();
+        return;
     }
-}
 
-function simulateNpmInstall(packages) {
-    if (packages.length === 0) {
-        addTerminalOutput('Installing dependencies...', 'info');
-        packages = ['discord.js', 'dotenv'];
+    const runBtn = document.querySelector('.run-btn');
+    const stopBtn = document.querySelector('.stop-btn');
+
+    if (runBtn) runBtn.style.display = 'none';
+    if (stopBtn) stopBtn.style.display = 'flex';
+
+    isRunning = true;
+    lastActivityTime = Date.now();
+
+    // Switch to both console and output tabs
+    switchConsoleTab('console');
+
+    // Clear previous output
+    clearConsole();
+
+    addConsoleOutput('🚀 Starting execution...', 'info');
+    addTerminalOutput('Starting execution...', 'system');
+
+    // Get main file to execute
+    const mainFileName = getMainFile();
+    if (!mainFileName) {
+        addConsoleOutput('❌ No file selected for execution', 'error');
+        stopCode();
+        return;
+    }
+
+    const fileData = currentProject.files.get(mainFileName);
+    if (!fileData) {
+        addConsoleOutput('❌ File not found', 'error');
+        stopCode();
+        return;
+    }
+
+    addConsoleOutput(`📂 Executing: ${mainFileName}`, 'info');
+
+    // Execute based on language
+    if (fileData.language === 'javascript') {
+        executeJavaScriptFile(mainFileName, fileData.content);
+    } else if (fileData.language === 'python') {
+        executePythonFile(mainFileName, fileData.content);
     } else {
-        addTerminalOutput(`Installing ${packages.join(', ')}...`, 'info');
+        addConsoleOutput('❌ Unsupported language for execution', 'error');
+        stopCode();
     }
-    
-    // Simulate install progress
-    let progress = 0;
-    const interval = setInterval(() => {
-        progress += Math.random() * 20;
-        if (progress >= 100) {
-            progress = 100;
-            clearInterval(interval);
-            addTerminalOutput('✅ Packages installed successfully!', 'success');
-        }
-    }, 500);
+
+    // Start inactivity timer
+    startInactivityTimer();
 }
 
-// Panel Management
-function switchPanel(panelName) {
-    // Update tab states
-    document.querySelectorAll('.panel-tab').forEach(tab => {
-        tab.classList.remove('active');
-        if (tab.getAttribute('data-panel') === panelName) {
-            tab.classList.add('active');
-        }
-    });
-    
-    // Update panel states
-    document.querySelectorAll('.console-panel').forEach(panel => {
-        panel.classList.remove('active');
-        if (panel.getAttribute('data-panel') === panelName) {
-            panel.classList.add('active');
-        }
-    });
-}
-
-function togglePanel() {
-    const bottomPanel = document.getElementById('bottomPanel');
-    const toggleBtn = document.querySelector('.panel-actions .panel-btn i');
-    
-    if (bottomPanel.style.display === 'none') {
-        bottomPanel.style.display = 'flex';
-        toggleBtn.className = 'fas fa-chevron-down';
-    } else {
-        bottomPanel.style.display = 'none';
-        toggleBtn.className = 'fas fa-chevron-up';
-    }
-}
-
-function clearConsole() {
-    const activePanel = document.querySelector('.console-panel.active');
-    if (activePanel) {
-        const panelType = activePanel.getAttribute('data-panel');
-        
-        switch (panelType) {
-            case 'terminal':
-                clearTerminal();
-                break;
-            case 'output':
-                document.getElementById('outputContent').innerHTML = '';
-                break;
-            case 'problems':
-                document.getElementById('problemsContent').innerHTML = '<div class="no-problems"><i class="fas fa-check-circle"></i><span>No problems detected</span></div>';
-                break;
-            case 'debug':
-                document.getElementById('debugContent').innerHTML = '';
-                break;
-        }
-    }
-}
-
-// Resize Handles
-function initializeResizeHandles() {
-    const leftHandle = document.getElementById('leftResizeHandle');
-    const consoleHandle = document.getElementById('consoleResizeHandle');
-    
-    makeResizable(leftHandle, 'horizontal-left');
-    makeResizable(consoleHandle, 'horizontal-bottom');
-}
-
-function makeResizable(handle, direction) {
-    let isResizing = false;
-    
-    handle.addEventListener('mousedown', function(e) {
-        isResizing = true;
-        document.body.style.cursor = direction.includes('horizontal') ? 'col-resize' : 'row-resize';
-        document.body.style.userSelect = 'none';
-    });
-    
-    document.addEventListener('mousemove', function(e) {
-        if (!isResizing) return;
-        
-        if (direction === 'horizontal-left') {
-            const newWidth = Math.max(200, Math.min(600, e.clientX));
-            document.querySelector('.ide-container').style.gridTemplateColumns = `${newWidth}px 4px 1fr`;
-        } else if (direction === 'horizontal-bottom') {
-            const containerHeight = document.querySelector('.ide-container').clientHeight;
-            const newHeight = Math.max(150, Math.min(500, containerHeight - e.clientY + 50));
-            document.querySelector('.ide-container').style.gridTemplateRows = `1fr 4px ${newHeight}px`;
-        }
-    });
-    
-    document.addEventListener('mouseup', function() {
-        isResizing = false;
-        document.body.style.cursor = '';
-        document.body.style.userSelect = '';
-    });
-}
-
-// Context Menu
-function initializeContextMenu() {
-    const contextMenu = document.getElementById('contextMenu');
-    
-    document.addEventListener('contextmenu', function(e) {
-        if (e.target.closest('.code-editor')) {
-            e.preventDefault();
-            showContextMenu(e.clientX, e.clientY);
-        }
-    });
-    
-    document.addEventListener('click', function() {
-        hideContextMenu();
-    });
-}
-
-function showContextMenu(x, y) {
-    const contextMenu = document.getElementById('contextMenu');
-    contextMenu.style.left = `${x}px`;
-    contextMenu.style.top = `${y}px`;
-    contextMenu.style.display = 'block';
-}
-
-function hideContextMenu() {
-    const contextMenu = document.getElementById('contextMenu');
-    contextMenu.style.display = 'none';
-}
-
-// Keyboard Shortcuts
-function initializeKeyboardShortcuts() {
-    document.addEventListener('keydown', function(e) {
-        // Ctrl/Cmd + S: Save
-        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-            e.preventDefault();
-            saveAll();
-        }
-        
-        // Ctrl/Cmd + N: New file
-        if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
-            e.preventDefault();
-            createNewFile();
-        }
-        
-        // Ctrl/Cmd + W: Close tab
-        if ((e.ctrlKey || e.metaKey) && e.key === 'w') {
-            e.preventDefault();
-            if (currentFile) {
-                closeTab(currentFile);
-            }
-        }
-        
-        // Ctrl/Cmd + R: Run code
-        if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
-            e.preventDefault();
-            runCode();
-        }
-        
-        // Ctrl/Cmd + `: Toggle terminal
-        if ((e.ctrlKey || e.metaKey) && e.key === '`') {
-            e.preventDefault();
-            switchPanel('terminal');
-        }
-        
-        // F5: Run code
-        if (e.key === 'F5') {
-            e.preventDefault();
-            runCode();
-        }
-        
-        // Escape: Hide autocomplete
-        if (e.key === 'Escape') {
-            hideAutocompleteSuggestions();
-            hideContextMenu();
-        }
-    });
-}
-
-// File operations
-function createNewFile() {
-    document.getElementById('fileModal').style.display = 'flex';
-    document.getElementById('fileName').focus();
-}
-
-function createNewFolder() {
-    const folderName = prompt('Enter folder name:');
-    if (folderName && folderName.trim()) {
-        // Add folder to file tree (implementation depends on your file tree structure)
-        showNotification(`Folder "${folderName}" created`, 'success');
-    }
-}
-
-function refreshFiles() {
-    showNotification('Files refreshed', 'info');
-    // Implement file refresh logic
-}
-
-function createFile() {
-    const fileName = document.getElementById('fileName').value.trim();
-    const fileType = document.getElementById('fileType').value;
-    
-    if (!fileName) {
-        showNotification('Please enter a file name', 'error');
-        return;
-    }
-    
-    // Check if file already exists
-    if (fileContents.has(fileName)) {
-        showNotification('File already exists', 'warning');
-        return;
-    }
-    
-    // Create file
-    fileContents.set(fileName, getDefaultFileContent(fileType));
-    openFile(fileName, fileType);
-    
-    // Close modal
-    closeModal('fileModal');
-    
-    // Add to file tree
-    addFileToTree(fileName, fileType);
-    
-    showNotification(`File "${fileName}" created`, 'success');
-}
-
-function addFileToTree(fileName, fileType) {
-    const fileTree = document.getElementById('fileTree');
-    
-    const treeItem = document.createElement('div');
-    treeItem.className = 'tree-item file';
-    treeItem.setAttribute('data-name', fileName);
-    treeItem.setAttribute('data-type', fileType);
-    
-    treeItem.innerHTML = `
-        <div class="tree-item-content">
-            <i class="fas fa-chevron-right tree-arrow"></i>
-            <i class="${getFileIcon(fileType)} file-icon"></i>
-            <span class="file-name">${fileName}</span>
-        </div>
-    `;
-    
-    fileTree.appendChild(treeItem);
-}
-
-function closeModal(modalId) {
-    document.getElementById(modalId).style.display = 'none';
-    
-    // Clear form
-    if (modalId === 'fileModal') {
-        document.getElementById('fileName').value = '';
-        document.getElementById('fileType').value = 'javascript';
-    }
-}
-
-// Utility functions
-function getFileIcon(fileType) {
-    const iconMap = {
-        javascript: 'fab fa-js-square js-icon',
-        json: 'fas fa-file-code json-icon',
-        css: 'fab fa-css3-alt css-icon',
-        html: 'fab fa-html5 html-icon',
-        markdown: 'fab fa-markdown md-icon',
-        text: 'fas fa-file-alt'
-    };
-    
-    return iconMap[fileType] || 'fas fa-file';
-}
-
-function getDefaultFileContent(fileType) {
-    const templates = {
-        javascript: `// Discord Bot - ${new Date().toLocaleDateString()}
-const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
-
-const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent
-    ]
-});
-
-client.on('ready', () => {
-    console.log(\`🤖 \${client.user.tag} is online!\`);
-});
-
-client.on('messageCreate', async (message) => {
-    if (message.author.bot) return;
-    
-    if (message.content === '!hello') {
-        message.reply('Hello! 👋');
-    }
-});
-
-client.login(process.env.DISCORD_TOKEN);`,
-        
-        json: `{
-  "name": "discord-bot",
-  "version": "1.0.0",
-  "description": "Smart Serve Discord Bot",
-  "main": "index.js",
-  "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js"
-  },
-  "dependencies": {
-    "discord.js": "^14.14.1",
-    "dotenv": "^16.3.1"
-  },
-  "keywords": ["discord", "bot"],
-  "author": "Smart Serve",
-  "license": "MIT"
-}`,
-        
-        css: `/* Smart Serve Bot Styles */
-body {
-    font-family: 'Inter', sans-serif;
-    background: #0f0f0f;
-    color: #ffffff;
-    margin: 0;
-    padding: 20px;
-}
-
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-.bot-card {
-    background: #1a1a1a;
-    border-radius: 12px;
-    padding: 24px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    transition: all 0.3s ease;
-}
-
-.bot-card:hover {
-    border-color: #00d4ff;
-    transform: translateY(-2px);
-}`,
-        
-        html: `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Serve Bot Dashboard</title>
-    <link href="style.css" rel="stylesheet">
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>Smart Serve Bot Dashboard</h1>
-            <p>Manage your Discord bot with ease</p>
-        </header>
-        
-        <main>
-            <div class="bot-card">
-                <h2>Bot Status</h2>
-                <div class="status online">
-                    <span class="indicator"></span>
-                    Online
-                </div>
-            </div>
-        </main>
-    </div>
-    
-    <script src="script.js"></script>
-</body>
-</html>`,
-        
-        markdown: `# Smart Serve Discord Bot
-
-Welcome to your Discord bot project! This bot is built with Smart Serve IDE.
-
-## Features
-
-- 🤖 **Smart Commands** - Intelligent command handling
-- 🎵 **Music Player** - High-quality music streaming
-- 🔒 **Moderation** - Advanced server moderation tools
-- 🎮 **Games** - Fun interactive games
-- 📊 **Analytics** - Detailed server statistics
-
-## Setup
-
-1. Install dependencies:
-   \`\`\`bash
-   npm install
-   \`\`\`
-
-2. Configure your bot token:
-   \`\`\`bash
-   cp .env.example .env
-   # Edit .env with your bot token
-   \`\`\`
-
-3. Start the bot:
-   \`\`\`bash
-   npm start
-   \`\`\`
-
-## Commands
-
-- \`!hello\` - Say hello to the bot
-- \`!help\` - Show available commands
-- \`!play <song>\` - Play a song
-- \`!stop\` - Stop music playback
-
-## Support
-
-Need help? Visit [Smart Serve Support](https://smartserve.com/support)
-
----
-Built with ❤️ by Smart Serve`,
-        
-        text: `Welcome to Smart Serve IDE!
-
-This is a text file where you can write notes, documentation, or any plain text content.
-
-Features:
-- Real-time syntax highlighting
-- Auto-completion
-- File management
-- Terminal integration
-- Beautiful UI
-
-Start coding your Discord bot today!`
-    };
-    
-    return templates[fileType] || '// New file\n';
-}
-
-function markFileModified(fileName) {
-    if (openFiles.has(fileName)) {
-        const fileInfo = openFiles.get(fileName);
-        if (!fileInfo.modified) {
-            fileInfo.modified = true;
-            openFiles.set(fileName, fileInfo);
-            
-            // Update tab to show modified state
-            const tab = document.querySelector(`.tab[data-file="${fileName}"] .tab-name`);
-            if (tab && !tab.textContent.endsWith('*')) {
-                tab.textContent += '*';
-            }
-        }
-    }
-}
-
-function saveFileContent(fileName, content) {
-    fileContents.set(fileName, content);
-    
-    // Update file modified state
-    if (openFiles.has(fileName)) {
-        const fileInfo = openFiles.get(fileName);
-        fileInfo.modified = false;
-        openFiles.set(fileName, fileInfo);
-        
-        // Update tab to remove modified indicator
-        const tab = document.querySelector(`.tab[data-file="${fileName}"] .tab-name`);
-        if (tab && tab.textContent.endsWith('*')) {
-            tab.textContent = tab.textContent.slice(0, -1);
-        }
-    }
-}
-
-function updateFileTreeSelection(fileName) {
-    // Remove selection from all files
-    document.querySelectorAll('.tree-item').forEach(item => {
-        item.classList.remove('active');
-    });
-    
-    // Add selection to current file
-    const fileItem = document.querySelector(`.tree-item[data-name="${fileName}"]`);
-    if (fileItem) {
-        fileItem.classList.add('active');
-    }
-}
-
-// Load user code from Discord
-async function loadUserCodeFromDiscord() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const templateName = urlParams.get('template');
-    const orderNumber = urlParams.get('order');
-    
-    if (templateName) {
-        await loadTemplateFiles(templateName);
-        return;
-    }
-    
+// Execute JavaScript file with real Node.js environment
+async function executeJavaScriptFile(fileName, code) {
     try {
-        const sessionToken = sessionStorage.getItem('sessionToken');
-        if (!sessionToken) {
-            console.log('No session token found');
-            return;
-        }
-
-        let url = '/api/user/code';
-        if (orderNumber) {
-            url = `/api/order/${orderNumber}/code`;
-            
-            // Update project name
-            const projectName = document.getElementById('projectName');
-            if (projectName) {
-                projectName.textContent = `Order #${orderNumber}`;
-            }
-        }
-
-        const response = await fetch(url, {
+        // Save file temporarily for execution
+        const response = await fetch('/api/execute/javascript', {
+            method: 'POST',
             headers: {
-                'Authorization': `Bearer ${sessionToken}`
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${sessionStorage.getItem('sessionToken')}`
+            },
+            body: JSON.stringify({
+                fileName: fileName,
+                code: code,
+                projectId: currentProject.id
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to start JavaScript execution');
+        }
+
+        const result = await response.json();
+        
+        if (result.success) {
+            addTerminalOutput(`> node ${fileName}`, 'command');
+            
+            // Connect to WebSocket for real-time output
+            connectToExecutionStream(result.processId);
+        } else {
+            addConsoleOutput(`❌ Failed to execute: ${result.error}`, 'error');
+            stopCode();
+        }
+
+    } catch (error) {
+        addConsoleOutput(`❌ Execution Error: ${error.message}`, 'error');
+        stopCode();
+    }
+}
+
+// Execute Python file with real Python environment
+async function executePythonFile(fileName, code) {
+    try {
+        // Save file temporarily for execution
+        const response = await fetch('/api/execute/python', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${sessionStorage.getItem('sessionToken')}`
+            },
+            body: JSON.stringify({
+                fileName: fileName,
+                code: code,
+                projectId: currentProject.id
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to start Python execution');
+        }
+
+        const result = await response.json();
+        
+        if (result.success) {
+            addTerminalOutput(`> python3 ${fileName}`, 'command');
+            
+            // Connect to WebSocket for real-time output
+            connectToExecutionStream(result.processId);
+        } else {
+            addConsoleOutput(`❌ Failed to execute: ${result.error}`, 'error');
+            stopCode();
+        }
+
+    } catch (error) {
+        addConsoleOutput(`❌ Execution Error: ${error.message}`, 'error');
+        stopCode();
+    }
+}
+
+// Connect to execution stream via WebSocket
+function connectToExecutionStream(processId) {
+    try {
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsHost = window.location.hostname;
+        const wsPort = '5001'; // WebSocket server port
+        const wsUrl = `${wsProtocol}//${wsHost}:${wsPort}/api/execute/stream/${processId}`;
+        
+        executionWebSocket = new WebSocket(wsUrl);
+
+        executionWebSocket.onopen = () => {
+            addConsoleOutput('🔗 Connected to execution stream', 'info');
+        };
+
+        executionWebSocket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            
+            if (data.type === 'stdout') {
+                addTerminalOutput(data.data, 'output');
+                addConsoleOutput(data.data, 'output');
+            } else if (data.type === 'stderr') {
+                addTerminalOutput(data.data, 'error');
+                addConsoleOutput(data.data, 'error');
+            } else if (data.type === 'exit') {
+                addConsoleOutput(`Process exited with code ${data.code}`, data.code === 0 ? 'success' : 'error');
+                stopCode();
+            }
+            
+            // Update activity time
+            lastActivityTime = Date.now();
+        };
+
+        executionWebSocket.onerror = (error) => {
+            addConsoleOutput('❌ WebSocket connection error', 'error');
+            stopCode();
+        };
+
+        executionWebSocket.onclose = () => {
+            addConsoleOutput('🔌 Execution stream closed', 'info');
+            if (isRunning) {
+                stopCode();
+            }
+        };
+
+    } catch (error) {
+        addConsoleOutput(`❌ Failed to connect to execution stream: ${error.message}`, 'error');
+        stopCode();
+    }
+}
+
+// Execute Python code (simulated with better parsing)
+function executePython(code) {
+    addConsoleOutput('🐍 Python execution (simulated)', 'info');
+
+    try {
+        const lines = code.split('\n');
+        const variables = {};
+
+        lines.forEach((line, index) => {
+            line = line.trim();
+
+            // Handle print statements
+            if (line.startsWith('print(') && line.endsWith(')')) {
+                const content = line.slice(6, -1);
+                let output = content;
+
+                // Replace variables
+                Object.keys(variables).forEach(varName => {
+                    output = output.replace(new RegExp(`\\b${varName}\\b`, 'g'), variables[varName]);
+                });
+
+                // Remove quotes for string literals
+                output = output.replace(/^['"]|['"]$/g, '');
+                addConsoleOutput(output, 'output');
+            }
+
+            // Handle simple variable assignments
+            else if (line.includes(' = ') && !line.startsWith('#')) {
+                const [varName, value] = line.split(' = ').map(s => s.trim());
+                if (varName && value) {
+                    // Simple value parsing
+                    if (value.startsWith('"') && value.endsWith('"')) {
+                        variables[varName] = value.slice(1, -1);
+                    } else if (value.startsWith("'") && value.endsWith("'")) {
+                        variables[varName] = value.slice(1, -1);
+                    } else if (!isNaN(value)) {
+                        variables[varName] = value;
+                    } else {
+                        variables[varName] = value;
+                    }
+                    addConsoleOutput(`📝 Variable ${varName} = ${variables[varName]}`, 'info');
+                }
+            }
+
+            // Handle for loops (basic)
+            else if (line.startsWith('for ') && line.endsWith(':')) {
+                addConsoleOutput(`🔄 Loop detected: ${line}`, 'info');
+            }
+
+            // Handle if statements
+            else if (line.startsWith('if ') && line.endsWith(':')) {
+                addConsoleOutput(`🔀 Condition: ${line}`, 'info');
+            }
+
+            // Handle comments
+            else if (line.startsWith('#')) {
+                addConsoleOutput(`💬 ${line}`, 'comment');
+            }
+
+            // Handle imports
+            else if (line.startsWith('import ') || line.startsWith('from ')) {
+                addConsoleOutput(`📦 ${line}`, 'info');
             }
         });
 
-        if (response.ok) {
-            const userCode = await response.json();
-            
-            // Clear default files
-            fileContents.clear();
-            openFiles.clear();
-            
-            // Clear existing tabs and panels
-            document.querySelectorAll('.tab:not(.tab-add)').forEach(tab => tab.remove());
-            document.querySelectorAll('.editor-panel').forEach(panel => panel.remove());
-            
-            // Load user files
-            let hasFiles = false;
-            for (const [filename, fileData] of Object.entries(userCode)) {
-                fileContents.set(filename, fileData.content);
-                openFile(filename, fileData.language || getFileTypeFromExtension(filename));
-                hasFiles = true;
-            }
-            
-            // If no files, create default
-            if (!hasFiles) {
-                fileContents.set('index.js', getDefaultFileContent('javascript'));
-                openFile('index.js', 'javascript');
-            }
-            
-            showNotification('Code loaded successfully!', 'success');
-            console.log('✅ User code loaded from Discord');
-        }
+        addConsoleOutput('✅ Python code simulation completed', 'success');
+        addConsoleOutput('💡 Note: This is a basic simulation. For full Python execution, use a Python environment.', 'warning');
+
     } catch (error) {
-        console.error('Error loading user code:', error);
-        // Create default file on error
-        if (!fileContents.has('index.js')) {
-            fileContents.set('index.js', getDefaultFileContent('javascript'));
-            openFile('index.js', 'javascript');
-        }
+        addConsoleOutput(`❌ Python simulation error: ${error.message}`, 'error');
     }
 }
 
-function getFileTypeFromExtension(filename) {
-    const ext = filename.split('.').pop().toLowerCase();
-    const typeMap = {
-        'js': 'javascript',
-        'json': 'json',
-        'css': 'css',
-        'html': 'html',
-        'htm': 'html',
-        'md': 'markdown',
-        'txt': 'text'
-    };
+// Start inactivity timer (3 minutes)
+function startInactivityTimer() {
+    clearInactivityTimer();
     
-    return typeMap[ext] || 'text';
-}
-
-async function loadTemplateFiles(templateName) {
-    // Template implementations would go here
-    console.log(`Loading template: ${templateName}`);
-    
-    // Update project name
-    const projectName = document.getElementById('projectName');
-    if (projectName) {
-        projectName.textContent = `${templateName} Template`;
-    }
-    
-    showNotification(`Template "${templateName}" loaded!`, 'success');
-}
-
-// Action functions
-function runCode() {
-    switchPanel('output');
-    
-    const outputContent = document.getElementById('outputContent');
-    outputContent.innerHTML = '';
-    
-    // Add running message
-    const runningMsg = document.createElement('div');
-    runningMsg.className = 'output-message info';
-    runningMsg.innerHTML = `
-        <span class="output-time">[${new Date().toLocaleTimeString()}]</span>
-        <span class="output-text">🚀 Running ${currentFile}...</span>
-    `;
-    outputContent.appendChild(runningMsg);
-    
-    // Simulate execution
-    setTimeout(() => {
-        const successMsg = document.createElement('div');
-        successMsg.className = 'output-message success';
-        successMsg.innerHTML = `
-            <span class="output-time">[${new Date().toLocaleTimeString()}]</span>
-            <span class="output-text">✅ Bot started successfully!</span>
-        `;
-        outputContent.appendChild(successMsg);
+    inactivityTimer = setInterval(() => {
+        const timeSinceActivity = Date.now() - lastActivityTime;
+        const threeMinutes = 3 * 60 * 1000; // 3 minutes in milliseconds
         
-        const infoMsg = document.createElement('div');
-        infoMsg.className = 'output-message info';
-        infoMsg.innerHTML = `
-            <span class="output-time">[${new Date().toLocaleTimeString()}]</span>
-            <span class="output-text">🔗 Bot connected to Discord API</span>
-        `;
-        outputContent.appendChild(infoMsg);
-    }, 1500);
-    
-    showNotification('Code execution started', 'info');
+        if (timeSinceActivity >= threeMinutes && isRunning) {
+            addConsoleOutput('⏰ Auto-stopping due to inactivity (3 minutes)', 'warning');
+            stopCode();
+        }
+    }, 30000); // Check every 30 seconds
 }
 
-function saveAll() {
-    // Save all open files
-    let savedCount = 0;
+// Clear inactivity timer
+function clearInactivityTimer() {
+    if (inactivityTimer) {
+        clearInterval(inactivityTimer);
+        inactivityTimer = null;
+    }
+}
+
+// Enhanced stop function
+async function stopCode() {
+    const runBtn = document.querySelector('.run-btn');
+    const stopBtn = document.querySelector('.stop-btn');
+
+    if (runBtn) runBtn.style.display = 'flex';
+    if (stopBtn) stopBtn.style.display = 'none';
+
+    isRunning = false;
     
-    openFiles.forEach((fileInfo, fileName) => {
-        if (fileInfo.modified) {
-            const editor = document.getElementById(`editor-${fileName}`);
-            if (editor) {
-                saveFileContent(fileName, editor.value);
-                savedCount++;
+    // Clear inactivity timer
+    clearInactivityTimer();
+
+    // Close WebSocket connection
+    if (executionWebSocket) {
+        executionWebSocket.close();
+        executionWebSocket = null;
+    }
+
+    // Stop server-side process
+    if (currentProcess) {
+        try {
+            await fetch('/api/execute/stop', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${sessionStorage.getItem('sessionToken')}`
+                },
+                body: JSON.stringify({
+                    processId: currentProcess
+                })
+            });
+        } catch (error) {
+            console.error('Error stopping process:', error);
+        }
+        currentProcess = null;
+    }
+
+    addConsoleOutput('🛑 Execution stopped', 'warning');
+    addTerminalOutput('Process terminated', 'system');
+}
+
+// Track user activity
+function updateActivity() {
+    lastActivityTime = Date.now();
+}
+
+// Add activity listeners
+document.addEventListener('keydown', updateActivity);
+document.addEventListener('click', updateActivity);
+document.addEventListener('scroll', updateActivity);
+window.addEventListener('focus', updateActivity);
+
+async function saveProject() {
+    try {
+        // Save to localStorage
+        const projectData = {
+            ...currentProject,
+            files: Array.from(currentProject.files.entries())
+        };
+
+        localStorage.setItem(`project_${currentProject.id}`, JSON.stringify(projectData));
+
+        // Save to server if logged in
+        const sessionToken = sessionStorage.getItem('sessionToken');
+        if (sessionToken) {
+            await saveProjectToServer(projectData);
+        }
+
+        // Remove modified indicators
+        document.querySelectorAll('.tab-name').forEach(tabName => {
+            if (tabName.textContent.endsWith('*')) {
+                tabName.textContent = tabName.textContent.slice(0, -1);
+            }
+        });
+
+        showNotification('Project saved successfully!', 'success');
+
+    } catch (error) {
+        console.error('Error saving project:', error);
+        showNotification('Failed to save project', 'error');
+    }
+}
+
+async function saveProjectToServer(projectData) {
+    try {
+        const response = await fetch('/api/projects/save', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${sessionStorage.getItem('sessionToken')}`
+            },
+            body: JSON.stringify(projectData)
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to save to server');
+        }
+
+        console.log('Project saved to server successfully');
+    } catch (error) {
+        console.error('Error saving to server:', error);
+    }
+}
+
+async function downloadProject() {
+    try {
+        const zip = new JSZip();
+
+        // Add all files to zip
+        for (const [fileName, fileData] of currentProject.files) {
+            zip.file(fileName, fileData.content);
+        }
+
+        // Generate and download zip
+        const content = await zip.generateAsync({ type: 'blob' });
+        const url = URL.createObjectURL(content);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${currentProject.name}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        URL.revokeObjectURL(url);
+
+        showNotification('Project downloaded successfully!', 'success');
+
+    } catch (error) {
+        console.error('Error downloading project:', error);
+        showNotification('Failed to download project', 'error');
+    }
+}
+
+async function loadProject(projectId) {
+    try {
+        let projectData = null;
+
+        // Try to load from server first
+        const sessionToken = sessionStorage.getItem('sessionToken');
+        if (sessionToken) {
+            try {
+                const response = await fetch(`/api/projects/${projectId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${sessionToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    projectData = await response.json();
+                }
+            } catch (error) {
+                console.log('Could not load from server, trying localStorage');
             }
         }
-    });
-    
-    showNotification(savedCount > 0 ? `Saved ${savedCount} files` : 'All files up to date', 'success');
+
+        // Fallback to localStorage
+        if (!projectData) {
+            const stored = localStorage.getItem(`project_${projectId}`);
+            if (stored) {
+                projectData = JSON.parse(stored);
+            }
+        }
+
+        if (projectData) {
+            currentProject = {
+                ...projectData,
+                files: new Map(projectData.files)
+            };
+
+            updateProjectName();
+
+            // Check if this is a moderation template
+            const urlParams = new URLSearchParams(window.location.search);
+            const template = urlParams.get('template');
+            const commands = urlParams.get('commands');
+            
+            if (template === 'moderation' && commands) {
+                await generateModerationBotFiles(commands.split(','));
+            }
+
+            // Load files into editor
+            for (const [fileName, fileData] of currentProject.files) {
+                fileContents.set(fileName, fileData.content);
+                addFileToExplorer(fileName, fileData.type);
+            }
+
+            // Open first file if exists
+            const firstFile = Array.from(currentProject.files.keys())[0];
+            if (firstFile) {
+                openFileInEditor(firstFile);
+                hideWelcomeScreen();
+            }
+
+            showNotification('Project loaded successfully!', 'success');
+        }
+
+    } catch (error) {
+        console.error('Error loading project:', error);
+        showNotification('Failed to load project', 'error');
+    }
 }
 
-function formatCode() {
-    const editor = document.getElementById(`editor-${currentFile}`);
-    if (!editor) return;
+// Generate moderation bot files with selected commands
+async function generateModerationBotFiles(selectedCommands) {
+    // Generate main bot file
+    const mainBotCode = generateModerationBotCode(selectedCommands);
+    createFileWithContent('main.py', 'python', mainBotCode);
     
-    // Simple code formatting (basic indentation)
-    const lines = editor.value.split('\n');
-    let formatted = [];
-    let indentLevel = 0;
+    // Generate config file
+    const configCode = `{
+    "token": "YOUR_BOT_TOKEN_HERE",
+    "prefix": "!",
+    "moderator_roles": ["Moderator", "Admin"],
+    "log_channel": "mod-logs"
+}`;
+    createFileWithContent('config.json', 'text', configCode);
     
-    lines.forEach(line => {
-        const trimmedLine = line.trim();
+    // Generate requirements file
+    const requirementsCode = `py-cord==2.4.1
+python-dotenv==1.0.0`;
+    createFileWithContent('requirements.txt', 'text', requirementsCode);
+    
+    // Set main.py as the main file
+    currentProject.mainFile = 'main.py';
+    setMainFile('main.py');
+    
+    showNotification(`Generated moderation bot with ${selectedCommands.length} commands!`, 'success');
+}
+
+// Generate moderation bot Python code
+function generateModerationBotCode(selectedCommands) {
+    return `import discord
+from discord.ext import commands
+import json
+import asyncio
+from datetime import datetime, timedelta
+
+# Load configuration
+with open('config.json', 'r') as f:
+    config = json.load(f)
+
+# Bot setup
+intents = discord.Intents.default()
+intents.message_content = True
+intents.members = True
+
+bot = commands.Bot(command_prefix=config['prefix'], intents=intents)
+
+@bot.event
+async def on_ready():
+    print(f'{bot.user} is now online!')
+    print(f'Bot ID: {bot.user.id}')
+    print('-------------------')
+
+# Helper function to check if user has moderation permissions
+def has_mod_permissions():
+    async def predicate(ctx):
+        if ctx.author.guild_permissions.administrator:
+            return True
         
-        // Decrease indent for closing brackets
-        if (trimmedLine.match(/^[}\]]/)) {
-            indentLevel = Math.max(0, indentLevel - 1);
-        }
+        for role in ctx.author.roles:
+            if role.name in config['moderator_roles']:
+                return True
         
-        // Add formatted line
-        formatted.push('    '.repeat(indentLevel) + trimmedLine);
+        await ctx.send("❌ You don't have permission to use this command!")
+        return False
+    
+    return commands.check(predicate)
+
+${generateCommandCode(selectedCommands)}
+
+# Run the bot
+if __name__ == "__main__":
+    bot.run(config['token'])`;
+}
+
+// Generate specific command code based on selection
+function generateCommandCode(selectedCommands) {
+    const commandImplementations = {
+        ban: `@bot.command()
+@has_mod_permissions()
+async def ban(ctx, member: discord.Member, *, reason="No reason provided"):
+    try:
+        await member.ban(reason=reason)
+        embed = discord.Embed(title="User Banned", color=0xff0000)
+        embed.add_field(name="User", value=f"{member.mention} ({member})", inline=False)
+        embed.add_field(name="Reason", value=reason, inline=False)
+        embed.add_field(name="Moderator", value=ctx.author.mention, inline=False)
+        await ctx.send(embed=embed)
+    except discord.Forbidden:
+        await ctx.send("❌ I don't have permission to ban this user!")`,
+
+        kick: `@bot.command()
+@has_mod_permissions()
+async def kick(ctx, member: discord.Member, *, reason="No reason provided"):
+    try:
+        await member.kick(reason=reason)
+        embed = discord.Embed(title="User Kicked", color=0xff9900)
+        embed.add_field(name="User", value=f"{member.mention} ({member})", inline=False)
+        embed.add_field(name="Reason", value=reason, inline=False)
+        embed.add_field(name="Moderator", value=ctx.author.mention, inline=False)
+        await ctx.send(embed=embed)
+    except discord.Forbidden:
+        await ctx.send("❌ I don't have permission to kick this user!")`,
+
+        mute: `@bot.command()
+@has_mod_permissions()
+async def mute(ctx, member: discord.Member, duration: int = 10, *, reason="No reason provided"):
+    try:
+        timeout_until = datetime.utcnow() + timedelta(minutes=duration)
+        await member.timeout(timeout_until, reason=reason)
+        embed = discord.Embed(title="User Muted", color=0x999999)
+        embed.add_field(name="User", value=f"{member.mention} ({member})", inline=False)
+        embed.add_field(name="Duration", value=f"{duration} minutes", inline=False)
+        embed.add_field(name="Reason", value=reason, inline=False)
+        embed.add_field(name="Moderator", value=ctx.author.mention, inline=False)
+        await ctx.send(embed=embed)
+    except discord.Forbidden:
+        await ctx.send("❌ I don't have permission to mute this user!")`,
+
+        clear: `@bot.command()
+@has_mod_permissions()
+async def clear(ctx, amount: int = 10):
+    if amount > 100:
+        await ctx.send("❌ Cannot delete more than 100 messages at once!")
+        return
+    
+    try:
+        deleted = await ctx.channel.purge(limit=amount + 1)
+        embed = discord.Embed(title="Messages Cleared", color=0x00ff00)
+        embed.add_field(name="Amount", value=f"{len(deleted)-1} messages", inline=False)
+        embed.add_field(name="Channel", value=ctx.channel.mention, inline=False)
+        embed.add_field(name="Moderator", value=ctx.author.mention, inline=False)
         
-        // Increase indent for opening brackets
-        if (trimmedLine.match(/[{\[]$/)) {
-            indentLevel++;
-        }
-    });
+        msg = await ctx.send(embed=embed)
+        await asyncio.sleep(5)
+        await msg.delete()
+    except discord.Forbidden:
+        await ctx.send("❌ I don't have permission to delete messages!")`,
+
+        warn: `# Warning system (requires database for persistence)
+warnings = {}
+
+@bot.command()
+@has_mod_permissions()
+async def warn(ctx, member: discord.Member, *, reason="No reason provided"):
+    user_id = str(member.id)
+    if user_id not in warnings:
+        warnings[user_id] = []
     
-    editor.value = formatted.join('\n');
-    
-    // Update syntax highlighting
-    const syntaxOverlay = document.getElementById(`syntaxOverlay-${currentFile}`);
-    const lineNumbers = document.getElementById(`lineNumbers-${currentFile}`);
-    const fileInfo = openFiles.get(currentFile);
-    
-    if (syntaxOverlay && fileInfo) {
-        applySyntaxHighlighting(editor, syntaxOverlay, fileInfo.type);
-        updateLineNumbers(editor, lineNumbers);
+    warning = {
+        "reason": reason,
+        "moderator": str(ctx.author.id),
+        "timestamp": datetime.utcnow().isoformat()
     }
+    warnings[user_id].append(warning)
     
+    embed = discord.Embed(title="User Warned", color=0xffff00)
+    embed.add_field(name="User", value=f"{member.mention} ({member})", inline=False)
+    embed.add_field(name="Reason", value=reason, inline=False)
+    embed.add_field(name="Warning Count", value=len(warnings[user_id]), inline=False)
+    embed.add_field(name="Moderator", value=ctx.author.mention, inline=False)
+    await ctx.send(embed=embed)`
+    };
+
+    return selectedCommands
+        .filter(cmd => commandImplementations[cmd])
+        .map(cmd => commandImplementations[cmd])
+        .join('\n\n');
+}
+
+function updateProjectName() {
+    const projectNameElement = document.getElementById('projectName');
+    if (projectNameElement) {
+        projectNameElement.textContent = currentProject.name;
+    }
+}
+
+// Utility Functions
+function formatCode(fileName) {
+    const editor = document.getElementById(`editor-${fileName}`);
+    if (!editor) return;
+
+    const fileData = currentProject.files.get(fileName);
+    if (!fileData) return;
+
+    let formatted = editor.value;
+
+    // Basic formatting based on language
+    if (fileData.language === 'javascript') {
+        // Simple JS formatting
+        formatted = formatted.replace(/;(\s*\n)/g, ';\n');
+        formatted = formatted.replace(/\{(\s*\n)/g, '{\n');
+        formatted = formatted.replace(/\}(\s*\n)/g, '}\n');
+    } else if (fileData.language === 'python') {
+        // Simple Python formatting
+        formatted = formatted.replace(/:\s*\n/g, ':\n');
+    }
+
+    editor.value = formatted;
+    editor.dispatchEvent(new Event('input'));
+
     showNotification('Code formatted', 'success');
 }
 
-function copyCode() {
-    const editor = document.getElementById(`editor-${currentFile}`);
+function copyFileContent(fileName) {
+    const editor = document.getElementById(`editor-${fileName}`);
     if (!editor) return;
-    
+
     navigator.clipboard.writeText(editor.value).then(() => {
         showNotification('Code copied to clipboard', 'success');
     }).catch(() => {
@@ -1367,20 +1424,51 @@ function copyCode() {
     });
 }
 
-function copySelection() {
-    // Implementation for copying selected text
+function clearConsole() {
+    const activeView = document.querySelector('.console-view.active');
+    if (!activeView) return;
+
+    const panel = activeView.dataset.panel;
+
+    if (panel === 'output') {
+        document.getElementById('outputContent').innerHTML = '';
+    } else if (panel === 'console') {
+        document.getElementById('terminalOutput').innerHTML = `
+            <div class="terminal-line">
+                <span class="terminal-prefix">smartserve@ide:~$</span>
+                <span class="terminal-cursor">|</span>
+            </div>
+        `;
+    }
 }
 
-function pasteText() {
-    // Implementation for pasting text
+function toggleConsole() {
+    const consolePanel = document.querySelector('.console-panel');
+    if (!consolePanel) return;
+
+    const isVisible = consolePanel.style.display !== 'none';
+    consolePanel.style.display = isVisible ? 'none' : 'flex';
+
+    const toggleIcon = document.querySelector('.console-actions .icon-btn i');
+    if (toggleIcon) {
+        toggleIcon.className = isVisible ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
+    }
 }
 
-function commentToggle() {
-    // Implementation for toggling comments
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'none';
+    }
+
+    // Clear form if it's the file modal
+    if (modalId === 'fileModal') {
+        document.getElementById('fileName').value = '';
+        document.getElementById('fileType').value = 'python';
+    }
 }
 
 function showNotification(message, type = 'info') {
-    // Create notification element
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
     notification.style.cssText = `
@@ -1396,22 +1484,19 @@ function showNotification(message, type = 'info') {
         max-width: 400px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     `;
-    
-    // Set background color based on type
+
     const colors = {
-        info: '#00d4ff',
-        success: '#00ff88',
-        warning: '#ffb800',
-        error: '#ff4757'
+        info: 'var(--accent-secondary)',
+        success: 'var(--accent-primary)',
+        warning: 'var(--accent-warning)',
+        error: 'var(--accent-danger)'
     };
-    
+
     notification.style.background = colors[type] || colors.info;
     notification.textContent = message;
-    
-    // Add to document
+
     document.body.appendChild(notification);
-    
-    // Remove after 3 seconds
+
     setTimeout(() => {
         notification.style.animation = 'slideOutRight 0.3s ease';
         setTimeout(() => {
@@ -1422,14 +1507,14 @@ function showNotification(message, type = 'info') {
     }, 3000);
 }
 
-// Add CSS for notification animations
+// Add notification styles
 const notificationStyles = document.createElement('style');
 notificationStyles.textContent = `
     @keyframes slideInRight {
         from { transform: translateX(100%); opacity: 0; }
         to { transform: translateX(0); opacity: 1; }
     }
-    
+
     @keyframes slideOutRight {
         from { transform: translateX(0); opacity: 1; }
         to { transform: translateX(100%); opacity: 0; }

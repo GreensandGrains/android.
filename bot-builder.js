@@ -1,17 +1,48 @@
-// Check if device is mobile - allow all devices but optimize for desktop view
+// Check if device is mobile - allow all devices but show desktop optimization message
 function isMobileDevice() {
-    // Always return false to allow all devices
-    return false;
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+function showMobileOptimizationNotice() {
+    if (isMobileDevice()) {
+        const notice = document.createElement('div');
+        notice.className = 'mobile-optimization-notice';
+        notice.innerHTML = `
+            <div class="notice-content">
+                <i class="fas fa-desktop"></i>
+                <p>For the best experience, we recommend using a desktop browser</p>
+                <button onclick="this.parentElement.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+        document.body.appendChild(notice);
+        
+        // Auto-remove after 10 seconds
+        setTimeout(() => {
+            if (notice.parentElement) notice.remove();
+        }, 10000);
+    }
 }
 
 // Initialize page when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    // Load user data and update UI
-    loadUserData();
+    try {
+        // Show mobile optimization notice if needed
+        showMobileOptimizationNotice();
+        
+        // Load user data and update UI
+        loadUserData();
 
-    // Initialize other components
-    initializeOrderForm();
-    initializeUserDropdown();
+        // Initialize other components
+        initializeOrderForm();
+        initializeUserDropdown();
+        
+        console.log('✅ Bot builder initialized successfully');
+    } catch (error) {
+        console.error('❌ Bot builder initialization failed:', error);
+        showNotification('Failed to initialize bot builder. Please refresh the page.', 'error');
+    }
 });
 
 // Initialize order form functionality
@@ -117,8 +148,73 @@ function loadUserData() {
     if (profileUsername) profileUsername.textContent = userData.username;
     if (userProfileSection) userProfileSection.style.display = 'flex';
 
-    // Load user orders count
+    // Load user usage and orders
+    loadUserUsage();
     loadUserOrders();
+}
+
+// Load and display user usage statistics
+async function loadUserUsage() {
+    try {
+        const sessionToken = sessionStorage.getItem('sessionToken');
+        if (!sessionToken) return;
+
+        const response = await fetch('/api/user/usage', {
+            headers: {
+                'Authorization': `Bearer ${sessionToken}`
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            updateUsageDisplay(data);
+        }
+    } catch (error) {
+        console.error('Error loading user usage:', error);
+    }
+}
+
+function updateUsageDisplay(data) {
+    const { usage, limits, plan } = data;
+    
+    // Update usage section
+    const usageSection = document.querySelector('.usage-section');
+    if (usageSection) {
+        const usageHeader = usageSection.querySelector('.usage-header span:first-child');
+        const usageText = usageSection.querySelector('.usage-text');
+        const usageFill = usageSection.querySelector('.usage-fill');
+        
+        if (usageHeader) usageHeader.textContent = `${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan`;
+        
+        // Calculate bot usage percentage
+        let percentage = 0;
+        if (limits.bots !== -1) {
+            percentage = Math.min((usage.bots / limits.bots) * 100, 100);
+        } else {
+            percentage = 0; // Unlimited
+        }
+        
+        if (usageFill) usageFill.style.width = `${percentage}%`;
+        
+        if (usageText) {
+            if (limits.bots === -1) {
+                usageText.textContent = `${usage.bots} bots created (Unlimited)`;
+            } else {
+                usageText.textContent = `${usage.bots}/${limits.bots} bots used`;
+            }
+        }
+        
+        // Update color based on usage
+        if (usageFill) {
+            if (percentage > 90) {
+                usageFill.style.background = 'linear-gradient(90deg, #ef4444, #dc2626)';
+            } else if (percentage > 70) {
+                usageFill.style.background = 'linear-gradient(90deg, #f59e0b, #d97706)';
+            } else {
+                usageFill.style.background = 'linear-gradient(90deg, #10b981, #059669)';
+            }
+        }
+    }
 }
 
 // Load user orders
@@ -247,6 +343,191 @@ function showPricing() {
     }
 }
 
+// Moderation template functionality
+function openModerationTemplate() {
+    const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+    const userPlan = userData.plan || 'starter';
+    
+    const commandLimits = {
+        starter: 50,
+        premium: 100,
+        pro: -1 // unlimited
+    };
+    
+    const maxCommands = commandLimits[userPlan];
+    
+    showModerationCommandSelection(maxCommands);
+}
+
+function showModerationCommandSelection(maxCommands) {
+    const modal = document.createElement('div');
+    modal.className = 'moderation-modal-overlay';
+    modal.id = 'moderation-modal';
+    
+    const moderationCommands = [
+        { name: 'ban', description: 'Ban a user from the server', category: 'Punishment' },
+        { name: 'kick', description: 'Kick a user from the server', category: 'Punishment' },
+        { name: 'mute', description: 'Mute a user in the server', category: 'Punishment' },
+        { name: 'unmute', description: 'Unmute a previously muted user', category: 'Punishment' },
+        { name: 'warn', description: 'Give a warning to a user', category: 'Punishment' },
+        { name: 'timeout', description: 'Timeout a user for specified duration', category: 'Punishment' },
+        { name: 'clear', description: 'Clear/delete multiple messages', category: 'Moderation' },
+        { name: 'lock', description: 'Lock a channel', category: 'Channel Management' },
+        { name: 'unlock', description: 'Unlock a channel', category: 'Channel Management' },
+        { name: 'slowmode', description: 'Set slowmode for a channel', category: 'Channel Management' },
+        { name: 'announce', description: 'Make announcements', category: 'Communication' },
+        { name: 'say', description: 'Make the bot say something', category: 'Communication' },
+        { name: 'embed', description: 'Send embedded messages', category: 'Communication' },
+        { name: 'poll', description: 'Create polls', category: 'Communication' },
+        { name: 'role', description: 'Manage user roles', category: 'Role Management' },
+        { name: 'autorole', description: 'Auto-assign roles to new members', category: 'Role Management' },
+        { name: 'reaction-role', description: 'Create reaction roles', category: 'Role Management' },
+        { name: 'userinfo', description: 'Get information about a user', category: 'Information' },
+        { name: 'serverinfo', description: 'Get server information', category: 'Information' },
+        { name: 'warnings', description: 'View user warnings', category: 'Information' },
+        { name: 'modlogs', description: 'View moderation logs', category: 'Information' },
+        { name: 'automod', description: 'Auto-moderation settings', category: 'Automation' },
+        { name: 'filter', description: 'Message filtering', category: 'Automation' },
+        { name: 'antispam', description: 'Anti-spam protection', category: 'Automation' },
+        { name: 'antiraid', description: 'Anti-raid protection', category: 'Automation' },
+        { name: 'backup', description: 'Server backup functionality', category: 'Utility' },
+        { name: 'ticket', description: 'Support ticket system', category: 'Utility' },
+        { name: 'giveaway', description: 'Giveaway system', category: 'Utility' },
+        { name: 'welcome', description: 'Welcome message system', category: 'Utility' },
+        { name: 'leave', description: 'Leave message system', category: 'Utility' },
+        { name: 'level', description: 'Leveling system', category: 'Utility' }
+    ];
+    
+    const categories = [...new Set(moderationCommands.map(cmd => cmd.category))];
+    
+    modal.innerHTML = `
+        <div class="moderation-modal">
+            <div class="modal-header">
+                <h2>🛡️ Moderation Bot Commands</h2>
+                <p>Select up to ${maxCommands === -1 ? 'unlimited' : maxCommands} commands for your moderation bot</p>
+                <button class="close-modal" onclick="closeModerationModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="modal-content">
+                <div class="command-stats">
+                    <span id="selected-count">0</span> / ${maxCommands === -1 ? '∞' : maxCommands} commands selected
+                    ${maxCommands !== -1 ? `<span class="upgrade-note">Upgrade for more commands</span>` : ''}
+                </div>
+                
+                <div class="command-categories">
+                    ${categories.map(category => `
+                        <div class="command-category">
+                            <h3>${category}</h3>
+                            <div class="command-list">
+                                ${moderationCommands.filter(cmd => cmd.category === category).map(cmd => `
+                                    <label class="command-item">
+                                        <input type="checkbox" name="commands" value="${cmd.name}" />
+                                        <div class="command-info">
+                                            <span class="command-name">/${cmd.name}</span>
+                                            <span class="command-desc">${cmd.description}</span>
+                                        </div>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeModerationModal()">Cancel</button>
+                <button class="btn-generate" id="generate-bot-btn" disabled onclick="generateModerationBot()">
+                    <i class="fas fa-code"></i>
+                    Generate Bot
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    modal.style.display = 'flex';
+    
+    // Add event listeners for command selection
+    const checkboxes = modal.querySelectorAll('input[type="checkbox"]');
+    const selectedCountElement = document.getElementById('selected-count');
+    const generateBtn = document.getElementById('generate-bot-btn');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', () => {
+            const selectedCount = modal.querySelectorAll('input[type="checkbox"]:checked').length;
+            selectedCountElement.textContent = selectedCount;
+            
+            // Disable checkboxes if limit reached
+            if (maxCommands !== -1 && selectedCount >= maxCommands) {
+                checkboxes.forEach(cb => {
+                    if (!cb.checked) cb.disabled = true;
+                });
+            } else {
+                checkboxes.forEach(cb => cb.disabled = false);
+            }
+            
+            // Enable/disable generate button
+            generateBtn.disabled = selectedCount === 0;
+        });
+    });
+}
+
+function closeModerationModal() {
+    const modal = document.getElementById('moderation-modal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+async function generateModerationBot() {
+    const modal = document.getElementById('moderation-modal');
+    const selectedCommands = Array.from(modal.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+    
+    if (selectedCommands.length === 0) {
+        alert('Please select at least one command');
+        return;
+    }
+    
+    try {
+        // Close modal
+        closeModerationModal();
+        
+        // Create project data
+        const projectData = {
+            id: 'project_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+            name: 'Moderation Bot',
+            language: 'python',
+            type: 'bot',
+            createdAt: Date.now(),
+            lastModified: Date.now(),
+            selectedCommands: selectedCommands
+        };
+        
+        // Save to localStorage
+        localStorage.setItem(`project_${projectData.id}`, JSON.stringify(projectData));
+        
+        // Generate the bot code
+        const botCode = generateModerationBotCode(selectedCommands);
+        
+        // Redirect to coding environment with the generated code
+        const params = new URLSearchParams({
+            project: projectData.id,
+            language: 'python',
+            name: 'Moderation Bot',
+            template: 'moderation',
+            commands: selectedCommands.join(',')
+        });
+        
+        window.location.href = `coding-environment.html?${params.toString()}`;
+        
+    } catch (error) {
+        console.error('Error generating moderation bot:', error);
+        alert('Failed to generate bot. Please try again.');
+    }
+}
+
 // Close pricing modal
 document.addEventListener('DOMContentLoaded', function() {
     const closePricing = document.getElementById('close-pricing');
@@ -329,6 +610,131 @@ function checkExistingLogin() {
     if (userData) {
         const user = JSON.parse(userData);
         handleSuccessfulLogin(user);
+    }
+}
+
+// Bot Project Creation
+function createBotProject(language) {
+    const modal = document.createElement('div');
+    modal.className = 'bot-project-modal';
+    modal.id = 'bot-project-modal';
+    
+    const languageConfig = {
+        python: {
+            name: 'Python',
+            icon: 'fab fa-python',
+            iconStyle: 'background: linear-gradient(135deg, #3776ab, #ffd43b); color: white;'
+        },
+        javascript: {
+            name: 'JavaScript',
+            icon: 'fab fa-js-square',
+            iconStyle: 'background: linear-gradient(135deg, #f7df1e, #323330); color: #323330;'
+        }
+    };
+    
+    const config = languageConfig[language];
+    
+    modal.innerHTML = `
+        <div class="bot-project-content">
+            <div class="bot-project-header">
+                <div class="project-language-icon" style="${config.iconStyle}">
+                    <i class="${config.icon}"></i>
+                </div>
+                <div>
+                    <h3>Create ${config.name} Bot</h3>
+                    <p>Start building your ${language} bot project</p>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="bot-project-name">Bot Name</label>
+                <input type="text" id="bot-project-name" placeholder="My Awesome Bot" />
+            </div>
+            
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeBotProjectModal()">Cancel</button>
+                <button class="btn-create" onclick="startBotProject('${language}')">Start Coding</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    modal.style.display = 'flex';
+    
+    // Focus input
+    document.getElementById('bot-project-name').focus();
+    
+    // Close on outside click
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            closeBotProjectModal();
+        }
+    });
+    
+    // Enter key to create
+    document.getElementById('bot-project-name').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            startBotProject(language);
+        }
+    });
+}
+
+function closeBotProjectModal() {
+    const modal = document.getElementById('bot-project-modal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.remove();
+    }
+}
+
+async function startBotProject(language) {
+    const botName = document.getElementById('bot-project-name').value.trim();
+    
+    if (!botName) {
+        alert('Please enter a bot name');
+        return;
+    }
+    
+    try {
+        // Create project data
+        const projectData = {
+            id: 'project_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+            name: botName,
+            language: language,
+            type: 'bot',
+            createdAt: Date.now(),
+            lastModified: Date.now()
+        };
+        
+        // Save to localStorage
+        localStorage.setItem(`project_${projectData.id}`, JSON.stringify(projectData));
+        
+        // Save to server if logged in
+        const sessionToken = sessionStorage.getItem('sessionToken');
+        if (sessionToken) {
+            try {
+                await fetch('/api/projects/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${sessionToken}`
+                    },
+                    body: JSON.stringify(projectData)
+                });
+            } catch (error) {
+                console.log('Could not save to server, saved locally');
+            }
+        }
+        
+        // Close modal
+        closeBotProjectModal();
+        
+        // Redirect to coding environment
+        window.location.href = `coding-environment.html?project=${projectData.id}&language=${language}&name=${encodeURIComponent(botName)}`;
+        
+    } catch (error) {
+        console.error('Error creating bot project:', error);
+        alert('Failed to create project. Please try again.');
     }
 }
 

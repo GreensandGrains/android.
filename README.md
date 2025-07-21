@@ -83,4 +83,3 @@ Users can check their order status using Discord commands:
 - ⏳ In Progress / Pending
 - ❌ Cancelled / Rejected
 - 📋 Default status
-# android.

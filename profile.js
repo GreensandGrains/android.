@@ -132,6 +132,10 @@ function editBot(botName) {
     alert(`Editing ${botName}... This feature is coming soon!`);
 }
 
+function redirectToNewBot() {
+    window.location.href = 'coding-environment.html';
+}
+
 function deployBot(botName) {
     alert(`Deploying ${botName}... This feature is coming soon!`);
 }

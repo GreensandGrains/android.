@@ -499,10 +499,199 @@
 
         <div class="bots-container">
             <div class="bots-grid" id="bots-grid">
-                <!-- Bots will be loaded here -->
+                <!-- Bots will be loaded here dynamically -->
             </div>
 
             <div class="empty-state" id="empty-state" style="display: none;">
+                <div class="empty-icon">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <h3>No Bots Yet</h3>
+                <p>Create your first bot to get started</p>
+                <button class="btn-primary" onclick="window.location.href='bot-builder.html'">
+                    <i class="fas fa-plus"></i>
+                    Create Bot
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script src="bots.js"></script>
+
+    <!-- Delete Modal Styles -->
+    <style>
+        .delete-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+        }
+
+        .delete-modal {
+            background: var(--secondary-black);
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .warning-icon {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .warning-icon i {
+            font-size: 3rem;
+            color: #ff6b6b;
+        }
+
+        .warning-text {
+            color: #ff6b6b;
+            font-size: 0.9rem;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        .btn-cancel, .btn-delete {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-cancel {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--pure-white);
+        }
+
+        .btn-delete {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .bot-menu {
+            position: relative;
+        }
+
+        .bot-menu-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .bot-menu-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--pure-white);
+        }
+
+        .bot-menu-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: var(--secondary-black);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            min-width: 150px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        .bot-menu.active .bot-menu-dropdown {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .menu-item {
+            width: 100%;
+            padding: 12px 16px;
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .menu-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .menu-item.delete-bot-btn:hover {
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 20px;
+            border-radius: 8px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 1002;
+            max-width: 400px;
+        }
+
+        .notification.success {
+            background: #10b981;
+        }
+
+        .notification.error {
+            background: #ef4444;
+        }
+
+        .notification.warning {
+            background: #f59e0b;
+        }
+
+        .notification button {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            margin-left: auto;
+        }
+    </style>
+</body>
+</html>;">
                 <div class="empty-icon">
                     <i class="fas fa-robot"></i>
                 </div>

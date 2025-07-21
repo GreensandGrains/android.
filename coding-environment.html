@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coding Environment - Smart Serve</title>
+    <title>Smart Serve IDE - Replit Style</title>
     <link href="coding-environment.css" rel="stylesheet" type="text/css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -12,19 +11,18 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-html.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
     <!-- Loading Screen -->
     <div class="loading-screen" id="loadingScreen">
         <div class="loading-animation">
-            <div class="code-blocks">
-                <div class="code-block" style="animation-delay: 0s;">const</div>
-                <div class="code-block" style="animation-delay: 0.1s;">function</div>
-                <div class="code-block" style="animation-delay: 0.2s;">async</div>
-                <div class="code-block" style="animation-delay: 0.3s;">await</div>
+            <div class="replit-logo">
+                <div class="logo-square"></div>
+                <div class="logo-square"></div>
+                <div class="logo-square"></div>
+                <div class="logo-square"></div>
             </div>
             <div class="loading-text">Loading Smart Serve IDE...</div>
             <div class="progress-bar">
@@ -33,33 +31,41 @@
         </div>
     </div>
 
-    <!-- Top Bar -->
-    <div class="top-bar">
-        <div class="top-bar-left">
-            <div class="home-btn" onclick="window.location.href='index.html'">
+    <!-- Top Navigation Bar -->
+    <div class="top-navbar">
+        <div class="navbar-left">
+            <div class="home-btn" onclick="redirectToBuilder()">
                 <i class="fas fa-home"></i>
-                <span>Home</span>
+                <span>Smart Serve</span>
             </div>
-            <div class="breadcrumb">
-                <span class="breadcrumb-item">Smart Serve</span>
-                <i class="fas fa-chevron-right"></i>
-                <span class="breadcrumb-item active">Coding Environment</span>
-            </div>
-        </div>
-        <div class="top-bar-center">
-            <div class="project-name">
+            <div class="project-info">
                 <i class="fas fa-code-branch"></i>
-                <span id="projectName">Discord Bot Project</span>
+                <span id="projectName">My Bot Project</span>
+                <div class="project-status">
+                    <div class="status-dot online"></div>
+                    <span>Ready</span>
+                </div>
             </div>
         </div>
-        <div class="top-bar-right">
-            <button class="action-btn" onclick="runCode()">
-                <i class="fas fa-play"></i>
-                <span>Run</span>
-            </button>
-            <button class="action-btn secondary" onclick="saveAll()">
-                <i class="fas fa-save"></i>
-                <span>Save</span>
+
+        <div class="navbar-center">
+            <div class="run-controls">
+                <button class="run-btn" onclick="runCode()">
+                    <i class="fas fa-play"></i>
+                    <span>Run</span>
+                </button>
+                <button class="stop-btn" onclick="stopCode()" style="display: none;">
+                    <i class="fas fa-stop"></i>
+                    <span>Stop</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="navbar-right">
+            
+            <button class="action-btn" onclick="downloadProject()">
+                <i class="fas fa-download"></i>
+                <span>Download ZIP</span>
             </button>
             <div class="user-profile-mini">
                 <img src="https://via.placeholder.com/32x32/ffffff/000000?text=U" alt="Profile" id="userAvatarMini" />
@@ -67,271 +73,165 @@
         </div>
     </div>
 
-    <!-- Main IDE Layout -->
-    <div class="ide-container">
-        <!-- Left Sidebar - File Explorer -->
-        <div class="sidebar left-sidebar" id="fileSidebar">
-            <div class="sidebar-header">
-                <div class="sidebar-title">
-                    <i class="fas fa-folder-open"></i>
+    <!-- Main IDE Container -->
+    <div class="ide-layout">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-section">
+                <div class="section-header">
+                    <i class="fas fa-folder"></i>
                     <span>Files</span>
-                </div>
-                <div class="sidebar-actions">
-                    <button class="sidebar-btn" onclick="createNewFile()" title="New File">
-                        <i class="fas fa-file-plus"></i>
-                    </button>
-                    <button class="sidebar-btn" onclick="createNewFolder()" title="New Folder">
-                        <i class="fas fa-folder-plus"></i>
-                    </button>
-                    <button class="sidebar-btn" onclick="refreshFiles()" title="Refresh">
-                        <i class="fas fa-sync-alt"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="file-tree" id="fileTree">
-                <div class="tree-item file" data-name="index.js" data-type="javascript">
-                    <div class="tree-item-content">
-                        <i class="fas fa-chevron-right tree-arrow"></i>
-                        <i class="fab fa-js-square file-icon js-icon"></i>
-                        <span class="file-name">index.js</span>
-                    </div>
-                </div>
-                <div class="tree-item file" data-name="package.json" data-type="json">
-                    <div class="tree-item-content">
-                        <i class="fas fa-chevron-right tree-arrow"></i>
-                        <i class="fas fa-file-code file-icon json-icon"></i>
-                        <span class="file-name">package.json</span>
-                    </div>
-                </div>
-                <div class="tree-item file" data-name="README.md" data-type="markdown">
-                    <div class="tree-item-content">
-                        <i class="fas fa-chevron-right tree-arrow"></i>
-                        <i class="fab fa-markdown file-icon md-icon"></i>
-                        <span class="file-name">README.md</span>
-                    </div>
-                </div>
-                <div class="tree-item folder collapsed" data-name="src">
-                    <div class="tree-item-content">
-                        <i class="fas fa-chevron-right tree-arrow"></i>
-                        <i class="fas fa-folder file-icon folder-icon"></i>
-                        <span class="file-name">src</span>
-                    </div>
-                    <div class="tree-children">
-                        <div class="tree-item file" data-name="bot.js" data-type="javascript">
-                            <div class="tree-item-content">
-                                <i class="fas fa-chevron-right tree-arrow"></i>
-                                <i class="fab fa-js-square file-icon js-icon"></i>
-                                <span class="file-name">bot.js</span>
-                            </div>
-                        </div>
-                        <div class="tree-item file" data-name="config.json" data-type="json">
-                            <div class="tree-item-content">
-                                <i class="fas fa-chevron-right tree-arrow"></i>
-                                <i class="fas fa-file-code file-icon json-icon"></i>
-                                <span class="file-name">config.json</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Sidebar Resize Handle -->
-        <div class="resize-handle" id="leftResizeHandle"></div>
-
-        <!-- Main Content Area -->
-        <div class="main-content">
-            <!-- Tab Bar -->
-            <div class="tab-bar" id="tabBar">
-                <div class="tab active" data-file="index.js" data-type="javascript">
-                    <div class="tab-content">
-                        <i class="fab fa-js-square tab-icon"></i>
-                        <span class="tab-name">index.js</span>
-                        <button class="tab-close" onclick="closeTab('index.js')">
-                            <i class="fas fa-times"></i>
+                    <div class="section-actions">
+                        <button class="icon-btn" onclick="createNewFile()" title="New File">
+                            <i class="fas fa-file-plus"></i>
+                        </button>
+                        <button class="icon-btn" onclick="createNewFolder()" title="New Folder">
+                            <i class="fas fa-folder-plus"></i>
                         </button>
                     </div>
                 </div>
-                <div class="tab-add" onclick="createNewFile()">
-                    <i class="fas fa-plus"></i>
-                </div>
-            </div>
-
-            <!-- Editor Container -->
-            <div class="editor-container" id="editorContainer">
-                <div class="editor-panel active" data-file="index.js">
-                    <div class="editor-header">
-                        <div class="editor-info">
-                            <span class="editor-file-name">index.js</span>
-                            <span class="editor-file-path">~/Discord Bot Project/index.js</span>
+                <div class="file-explorer" id="fileExplorer">
+                    <div class="empty-state" id="emptyState">
+                        <div class="empty-icon">
+                            <i class="fas fa-file-code"></i>
                         </div>
-                        <div class="editor-actions">
-                            <button class="editor-btn" onclick="formatCode()" title="Format Code">
-                                <i class="fas fa-code"></i>
-                            </button>
-                            <button class="editor-btn" onclick="copyCode()" title="Copy All">
-                                <i class="fas fa-copy"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="editor-content">
-                        <div class="line-numbers" id="lineNumbers">
-                            <div class="line-number">1</div>
-                        </div>
-                        <textarea 
-                            class="code-editor" 
-                            id="codeEditor" 
-                            spellcheck="false"
-                            autocomplete="off"
-                            placeholder="// Start coding here...&#10;// Your Discord bot code will appear here"
-                        ></textarea>
-                        <div class="syntax-overlay" id="syntaxOverlay"></div>
+                        <div class="empty-text">No files yet</div>
+                        <div class="empty-subtext">Create your first file to get started</div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Console Resize Handle -->
-        <div class="resize-handle horizontal" id="consoleResizeHandle"></div>
-
-        <!-- Bottom Panel - Console -->
-        <div class="bottom-panel" id="bottomPanel">
-            <div class="panel-header">
-                <div class="panel-tabs">
-                    <div class="panel-tab active" data-panel="terminal" onclick="switchPanel('terminal')">
-                        <i class="fas fa-terminal"></i>
-                        <span>Terminal</span>
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Editor Area -->
+            <div class="editor-area">
+                <div class="tab-container">
+                    <div class="tabs" id="tabContainer">
+                        <!-- Tabs will be dynamically added -->
                     </div>
-                    <div class="panel-tab" data-panel="output" onclick="switchPanel('output')">
-                        <i class="fas fa-list-alt"></i>
-                        <span>Output</span>
-                    </div>
-                    <div class="panel-tab" data-panel="problems" onclick="switchPanel('problems')">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <span>Problems</span>
-                        <span class="tab-badge">0</span>
-                    </div>
-                    <div class="panel-tab" data-panel="debug" onclick="switchPanel('debug')">
-                        <i class="fas fa-bug"></i>
-                        <span>Debug Console</span>
-                    </div>
-                </div>
-                <div class="panel-actions">
-                    <button class="panel-btn" onclick="clearConsole()" title="Clear">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                    <button class="panel-btn" onclick="togglePanel()" title="Toggle Panel">
-                        <i class="fas fa-chevron-down"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="panel-content">
-                <!-- Terminal Panel -->
-                <div class="console-panel active" data-panel="terminal">
-                    <div class="terminal-output" id="terminalOutput">
-                        <div class="terminal-line">
-                            <span class="terminal-prefix">smartserve@discord-bot:~$</span>
-                            <span class="terminal-cursor">|</span>
-                        </div>
-                    </div>
-                    <div class="terminal-input-container">
-                        <span class="terminal-prompt">smartserve@discord-bot:~$</span>
-                        <input type="text" class="terminal-input" id="terminalInput" placeholder="Enter command..." />
+                    <div class="tab-actions">
+                        <button class="icon-btn" onclick="createNewFile()">
+                            <i class="fas fa-plus"></i>
+                        </button>
                     </div>
                 </div>
 
-                <!-- Output Panel -->
-                <div class="console-panel" data-panel="output">
-                    <div class="output-content" id="outputContent">
-                        <div class="output-message info">
-                            <span class="output-time">[12:00:00]</span>
-                            <span class="output-text">Ready to run your code...</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Problems Panel -->
-                <div class="console-panel" data-panel="problems">
-                    <div class="problems-content" id="problemsContent">
-                        <div class="no-problems">
-                            <i class="fas fa-check-circle"></i>
-                            <span>No problems detected</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Debug Panel -->
-                <div class="console-panel" data-panel="debug">
-                    <div class="debug-content" id="debugContent">
-                        <div class="debug-message">
-                            <span class="debug-time">[12:00:00]</span>
-                            <span class="debug-text">Debug console ready</span>
+                <div class="editor-container" id="editorContainer">
+                    <div class="welcome-screen" id="welcomeScreen">
+                        <div class="welcome-content">
+                            <div class="welcome-icon">
+                                <i class="fas fa-rocket"></i>
+                            </div>
+                            <h2>Welcome to Smart Serve IDE</h2>
+                            <p>Create your first file to start coding</p>
+                            <div class="quick-actions">
+                                <button class="quick-btn" onclick="createFileOfType('python')">
+                                    <i class="fab fa-python"></i>
+                                    <span>New Python File</span>
+                                </button>
+                                <button class="quick-btn" onclick="createFileOfType('javascript')">
+                                    <i class="fab fa-js-square"></i>
+                                    <span>New JavaScript File</span>
+                                </button>
+                                <button class="quick-btn" onclick="createFileOfType('text')">
+                                    <i class="fas fa-file-alt"></i>
+                                    <span>New Text File</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Context Menu -->
-    <div class="context-menu" id="contextMenu">
-        <div class="context-item" onclick="copySelection()">
-            <i class="fas fa-copy"></i>
-            <span>Copy</span>
-        </div>
-        <div class="context-item" onclick="pasteText()">
-            <i class="fas fa-paste"></i>
-            <span>Paste</span>
-        </div>
-        <div class="context-separator"></div>
-        <div class="context-item" onclick="formatCode()">
-            <i class="fas fa-code"></i>
-            <span>Format Code</span>
-        </div>
-        <div class="context-item" onclick="commentToggle()">
-            <i class="fas fa-comment"></i>
-            <span>Toggle Comment</span>
+            <!-- Console/Output Panel -->
+            <div class="console-panel">
+                <div class="console-header">
+                    <div class="console-tabs">
+                        <div class="console-tab active" data-panel="console">
+                            <i class="fas fa-terminal"></i>
+                            <span>Console</span>
+                        </div>
+                        <div class="console-tab" data-panel="output">
+                            <i class="fas fa-list-alt"></i>
+                            <span>Output</span>
+                        </div>
+                        <div class="console-tab" data-panel="problems">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <span>Problems</span>
+                            <span class="tab-badge">0</span>
+                        </div>
+                    </div>
+                    <div class="console-actions">
+                        <button class="icon-btn" onclick="clearConsole()">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        <button class="icon-btn" onclick="toggleConsole()">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="console-content">
+                    <div class="console-view active" data-panel="console">
+                        <div class="terminal-output" id="terminalOutput">
+                            <div class="terminal-line">
+                                <span class="terminal-prefix">smartserve@ide:~$</span>
+                                <span class="terminal-cursor">|</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="console-view" data-panel="output">
+                        <div class="output-content" id="outputContent">
+                            <div class="output-line">
+                                <span class="output-time">[Ready]</span>
+                                <span class="output-text">Console ready for output...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="console-view" data-panel="problems">
+                        <div class="problems-content">
+                            <div class="no-problems">
+                                <i class="fas fa-check-circle"></i>
+                                <span>No problems detected</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- File Creation Modal -->
-    <div class="modal" id="fileModal">
-        <div class="modal-content">
+    <div class="modal-overlay" id="fileModal">
+        <div class="modal">
             <div class="modal-header">
                 <h3>Create New File</h3>
-                <button class="modal-close" onclick="closeModal('fileModal')">
+                <button class="icon-btn" onclick="closeModal('fileModal')">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label for="fileName">File Name</label>
-                    <input type="text" id="fileName" placeholder="e.g., script.js, style.css" />
+                    <label>File Name</label>
+                    <input type="text" id="fileName" placeholder="main.py" />
                 </div>
                 <div class="form-group">
-                    <label for="fileType">File Type</label>
+                    <label>File Type</label>
                     <select id="fileType">
+                        <option value="python">Python (.py)</option>
                         <option value="javascript">JavaScript (.js)</option>
-                        <option value="json">JSON (.json)</option>
-                        <option value="css">CSS (.css)</option>
-                        <option value="html">HTML (.html)</option>
-                        <option value="markdown">Markdown (.md)</option>
-                        <option value="text">Text (.txt)</option>
+                        <option value="text">Text File (.txt)</option>
+                        <option value="env">Environment (.env)</option>
                     </select>
                 </div>
             </div>
             <div class="modal-footer">
                 <button class="btn secondary" onclick="closeModal('fileModal')">Cancel</button>
-                <button class="btn primary" onclick="createFile()">Create File</button>
+                <button class="btn primary" onclick="createFile()">Create</button>
             </div>
-        </div>
-    </div>
-
-    <!-- Auto-completion popup -->
-    <div class="autocomplete-popup" id="autocompletePopup">
-        <div class="autocomplete-item" data-value="console.log()">
-            <i class="fas fa-code"></i>
-            <span>console.log()</span>
         </div>
     </div>
 

@@ -46,25 +46,71 @@
 
     <!-- Hero Section -->
     <section id="home" class="hero">
-        <div class="hero-bg"></div>
-        <div class="stars"></div>
-        <div class="hero-images">
-            <img src="https://images.unsplash.com/photo-1446776877081-d282a0f896e2?w=1200&q=80" alt="Space" class="space-bg">
-            <img src="https://images.unsplash.com/photo-1581833971358-2c8b550f87b3?w=800&q=80" alt="Coding" class="coding-img floating">
+        <div class="hero-bg">
+            <div class="animated-bg">
+                <div class="bg-layer layer-1"></div>
+                <div class="bg-layer layer-2"></div>
+                <div class="bg-layer layer-3"></div>
+                <div class="floating-particles">
+                    <div class="particle"></div>
+                    <div class="particle"></div>
+                    <div class="particle"></div>
+                    <div class="particle"></div>
+                    <div class="particle"></div>
+                    <div class="particle"></div>
+                </div>
+            </div>
+        </div>
+        <div class="stars-field">
+            <div class="star"></div>
+            <div class="star"></div>
+            <div class="star"></div>
+            <div class="star"></div>
+            <div class="star"></div>
+            <div class="star"></div>
+            <div class="star"></div>
+            <div class="star"></div>
         </div>
         <div class="hero-content">
+            <div class="hero-badge">
+                <i class="fas fa-rocket"></i>
+                <span>Next-Gen Bot Builder</span>
+            </div>
             <h1 class="hero-title">
-                <span class="typing-text" id="typing-text"></span>
+                <span class="gradient-text">Smart Serve</span>
+                <span class="typing-text" id="typing-text">Bot Builder</span>
                 <span class="cursor">|</span>
             </h1>
-            <p class="hero-subtitle">Pioneering the future of technology with innovative solutions that transcend boundaries</p>
+            <p class="hero-subtitle">Create powerful Discord bots with AI assistance, visual coding environment, and real-time deployment</p>
+            <div class="hero-stats">
+                <div class="stat-item">
+                    <span class="stat-number">10K+</span>
+                    <span class="stat-label">Bots Created</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">99.9%</span>
+                    <span class="stat-label">Uptime</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">24/7</span>
+                    <span class="stat-label">Support</span>
+                </div>
+            </div>
             <div class="hero-buttons">
-                <button class="btn-primary" id="get-started-btn">Get Started</button>
-                <button class="btn-secondary">Watch Demo</button>
+                <button class="btn-primary" id="get-started-btn">
+                    <i class="fas fa-rocket"></i>
+                    <span>Start Building</span>
+                    <div class="btn-glow"></div>
+                </button>
+                <button class="btn-secondary">
+                    <i class="fas fa-play"></i>
+                    <span>Watch Demo</span>
+                </button>
             </div>
         </div>
         <div class="scroll-indicator">
             <div class="scroll-arrow"></div>
+            <span>Scroll to explore</span>
         </div>
     </section>
 
@@ -230,12 +276,29 @@
                         <span>Silicon Valley, CA 94000</span>
                     </div>
                 </div>
-                <form class="contact-form">
-                    <input type="text" placeholder="Your Name" required>
-                    <input type="email" placeholder="Your Email" required>
-                    <input type="text" placeholder="Subject" required>
-                    <textarea placeholder="Your Message" rows="5" required></textarea>
-                    <button type="submit" class="btn-primary">Send Message</button>
+                <form class="contact-form" id="contactForm">
+                    <div class="form-group">
+                        <input type="text" name="name" placeholder="Your Name" required>
+                        <div class="form-line"></div>
+                    </div>
+                    <div class="form-group">
+                        <input type="email" name="email" placeholder="Your Email" required>
+                        <div class="form-line"></div>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" name="subject" placeholder="Subject" required>
+                        <div class="form-line"></div>
+                    </div>
+                    <div class="form-group">
+                        <textarea name="message" placeholder="Your Message" rows="5" required></textarea>
+                        <div class="form-line"></div>
+                    </div>
+                    <button type="submit" class="btn-primary" id="contactSubmit">
+                        <span class="btn-text">Send Message</span>
+                        <div class="btn-loader" style="display: none;">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </div>
+                    </button>
                 </form>
             </div>
         </div>
@@ -256,7 +319,8 @@
 
     <script src="lang.js"></script>
     <script src="script.js"></script>
-    // Check if user is authenticated and update UI accordingly
+    <script>
+        // Check if user is authenticated and update UI accordingly
         document.addEventListener('DOMContentLoaded', function() {
             const userData = localStorage.getItem('userData');
             const sessionToken = sessionStorage.getItem('sessionToken');

@@ -91,9 +91,9 @@ class AuthSystem {
                 return false;
             }
 
-            // Check if session is still valid (24 hours)
+            // Check if session is still valid (7 days)
             const sessionAge = Date.now() - parseInt(loginTimestamp);
-            const sessionTimeout = 24 * 60 * 60 * 1000; // 24 hours
+            const sessionTimeout = 7 * 24 * 60 * 60 * 1000; // 7 days
             
             if (sessionAge > sessionTimeout) {
                 console.log('Session expired');
@@ -239,22 +239,24 @@ class AuthSystem {
     setupSessionTimeout() {
         let timeoutId;
         let warningShown = false;
+        let lastActivity = Date.now();
         
         const resetTimeout = () => {
             clearTimeout(timeoutId);
             warningShown = false;
+            lastActivity = Date.now();
             
-            // Show warning 5 minutes before timeout
+            // Show warning 5 minutes before timeout (23 hours instead of 23 minutes)
             timeoutId = setTimeout(() => {
-                if (this.isAuthenticated() && !warningShown) {
+                if (this.isAuthenticated() && !warningShown && (Date.now() - lastActivity) > (23 * 60 * 60 * 1000)) {
                     warningShown = true;
                     this.showSessionWarning();
                 }
-            }, 23 * 60 * 1000); // 23 minutes
+            }, 23 * 60 * 60 * 1000); // 23 hours
         };
 
-        // Reset timeout on user activity
-        ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'].forEach(event => {
+        // Reset timeout on user activity (less aggressive)
+        ['click', 'keypress'].forEach(event => {
             document.addEventListener(event, resetTimeout, { passive: true });
         });
 
@@ -418,14 +420,39 @@ class AuthSystem {
     }
 }
 
+// Initialize authentication system
+let authSystem;
+
 // Initialize authentication system after DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
     // Small delay to ensure all scripts are loaded
     setTimeout(() => {
-        const authSystem = new AuthSystem();
-        window.authSystem = authSystem;
+        try {
+            authSystem = new AuthSystem();
+            window.authSystem = authSystem;
+            console.log('🔐 Authentication system initialized');
+        } catch (error) {
+            console.error('❌ Authentication system failed to initialize:', error);
+            // Create minimal fallback
+            window.authSystem = {
+                isAuthenticated: () => !!localStorage.getItem('userData'),
+                getCurrentUser: () => {
+                    try {
+                        return JSON.parse(localStorage.getItem('userData') || '{}');
+                    } catch { return {}; }
+                },
+                logout: () => {
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.href = 'index.html';
+                }
+            };
+        }
     }, 100);
 });
 
-// AuthSystem will be exported in the DOMContentLoaded handler above
+// Export for other modules
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { AuthSystem };
+}
 

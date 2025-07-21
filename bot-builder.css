@@ -25,7 +25,7 @@ body {
     overflow-x: hidden;
 }
 
-/* Animated Space Background */
+/* Space Background */
 .space-background {
     position: fixed;
     top: 0;
@@ -33,6 +33,31 @@ body {
     width: 100%;
     height: 100%;
     z-index: -1;
+    background: radial-gradient(ellipse at center, #0f1419 0%, #000 100%);
+    overflow: hidden;
+}
+
+.space-background::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        radial-gradient(2px 2px at 20px 30px, #eee, transparent),
+        radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.8), transparent),
+        radial-gradient(1px 1px at 90px 40px, #fff, transparent),
+        radial-gradient(1px 1px at 130px 80px, rgba(255,255,255,0.6), transparent),
+        radial-gradient(2px 2px at 160px 30px, #ddd, transparent);
+    background-repeat: repeat;
+    background-size: 200px 100px;
+    animation: sparkle 10s linear infinite;
+}
+
+@keyframes sparkle {
+    0%, 100% { opacity: 0.8; }
+    50% { opacity: 0.4; }
 }
 
 .stars-layer {
@@ -760,10 +785,15 @@ body {
 
 .usage-section {
     background: rgba(42, 42, 42, 0.8);
-    border-radius: 10px;
-    padding: 15px;
-    margin-bottom: 15px;
+    backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.usage-section:hover {
+    background: rgba(42, 42, 42, 0.95);
+    border-color: rgba(96, 165, 250, 0.3);
+    box-shadow: 0 8px 25px rgba(96, 165, 250, 0.1);
 }
 
 .usage-header {
@@ -1047,6 +1077,12 @@ body {
 }
 
 .bot-builder-form {
+    background: rgba(26, 26, 26, 0.9);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
     max-width: 800px;
     margin: 0 auto;
 }
@@ -1092,6 +1128,7 @@ body {
     flex-wrap: wrap;
 }
 
+.btn-template,
 .btn-ai-create,
 .btn-make-order {
     padding: 15px 30px;
@@ -1104,6 +1141,16 @@ body {
     align-items: center;
     gap: 10px;
     font-size: 1rem;
+}
+
+.btn-template {
+    background: linear-gradient(135deg, #9c27b0, #673ab7);
+    color: white;
+}
+
+.btn-template:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(156, 39, 176, 0.3);
 }
 
 .btn-ai-create {
@@ -1124,30 +1171,236 @@ body {
 }
 
 .strikethrough {
-    position: relative;
+    text-decoration: line-through;
+    opacity: 0.6;
 }
 
-.strikethrough::after {
+/* Language Selection Section */
+.language-section {
+    margin-top: 40px;
+    padding: 30px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.language-section h3 {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+    text-align: center;
+}
+
+.language-section p {
+    color: var(--text-secondary);
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 16px;
+}
+
+.language-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.language-card {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 24px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.language-card::before {
     content: '';
     position: absolute;
-    top: 50%;
+    top: 0;
     left: 0;
-    right: 0;
-    height: 2px;
-    background: var(--text-secondary);
-    transform: translateY(-50%);
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.02));
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
-.btn-make-order {
-    background: var(--pure-white);
-    color: var(--primary-black);
-    border: 2px solid var(--pure-white);
+.language-card:hover::before {
+    opacity: 1;
 }
 
-.btn-make-order:hover {
-    background: var(--text-secondary);
+.language-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(0, 153, 255, 0.3);
+    box-shadow: 0 8px 32px rgba(0, 153, 255, 0.1);
+}
+
+.language-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.language-icon.python {
+    background: linear-gradient(135deg, #3776ab, #ffd43b);
+    color: white;
+}
+
+.language-icon.javascript {
+    background: linear-gradient(135deg, #f7df1e, #323330);
+    color: #323330;
+}
+
+.language-info {
+    flex: 1;
+}
+
+.language-info h4 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--text-primary);
+}
+
+.language-info p {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin: 0;
+    text-align: left;
+}
+
+.language-action {
+    color: var(--accent-color);
+    font-size: 18px;
+    transition: transform 0.3s ease;
+}
+
+.language-card:hover .language-action {
+    transform: translateX(4px);
+}
+
+/* Bot Project Modal */
+.bot-project-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+    backdrop-filter: blur(5px);
+}
+
+.bot-project-content {
+    background: var(--secondary-black);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 32px;
+    min-width: 400px;
+    max-width: 500px;
+    animation: modalSlideIn 0.3s ease;
+}
+
+.bot-project-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.project-language-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+}
+
+.bot-project-header h3 {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.form-group {
+    margin-bottom: 24px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(0, 153, 255, 0.1);
+}
+
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.btn-cancel, .btn-create {
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+}
+
+.btn-cancel {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-cancel:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+}
+
+.btn-create {
+    background: var(--accent-color);
+    color: white;
+}
+
+.btn-create:hover {
+    background: #0080e6;
     transform: translateY(-2px);
-    box-shadow: 0 10px 30px rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 16px rgba(0, 153, 255, 0.3);
 }
 
 /* Popup */
@@ -1409,6 +1662,37 @@ body {
     animation: pulse 2s ease-in-out infinite;
 }
 
+.btn-make-order {
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-make-order::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, #60a5fa, #34d399, #f59e0b, #60a5fa);
+    background-size: 400% 400%;
+    border-radius: inherit;
+    z-index: -1;
+    animation: gradientShift 3s ease infinite;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.btn-make-order:hover::before {
+    opacity: 1;
+}
+
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
 .btn-make-order.processing {
     background: linear-gradient(45deg, #fbbf24, #f59e0b, #fbbf24);
     background-size: 200% 200%;
@@ -1419,11 +1703,6 @@ body {
     background: #4ade80 !important;
     color: var(--primary-black) !important;
     transform: scale(1.05);
-}
-
-@keyframes gradientShift {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
 }
 
 /* User Orders Section */

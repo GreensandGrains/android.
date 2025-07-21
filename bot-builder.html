@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -121,7 +120,7 @@
                 <span>Smart Serve</span>
             </div>
         </div>
-        
+
         <nav class="sidebar-nav">
             <div class="nav-section">
                 <div class="nav-item active">
@@ -141,9 +140,9 @@
                     <span>Teams</span>
                 </div>
             </div>
-            
+
             <div class="nav-divider"></div>
-            
+
             <div class="nav-section">
                 <div class="nav-item" onclick="window.location.href='template.html'">
                     <i class="fas fa-code"></i>
@@ -179,7 +178,7 @@
                 </div>
                 <div class="usage-text">65% of limit used</div>
             </div>
-            
+
             <button class="upgrade-btn" onclick="openUpgradeModal()">
                 <i class="fas fa-crown"></i>
                 <span>Upgrade to Core</span>
@@ -232,15 +231,51 @@
             </div>
 
             <div class="button-group">
-                <button class="btn-ai-create disabled" id="ai-create-btn">
-                    <i class="fas fa-magic"></i>
-                    <span class="strikethrough">Create by AI</span>
-                </button>
-                
-                <button class="btn-make-order" id="make-order-btn">
-                    <i class="fas fa-shopping-cart"></i>
-                    Make an Order
-                </button>
+                    <button class="btn-template" onclick="openModerationTemplate()">
+                        <i class="fas fa-shield-alt"></i>
+                        Moderation Template
+                    </button>
+                    <button class="btn-ai-create disabled" id="ai-create-btn">
+                        <i class="fas fa-magic"></i>
+                        <span class="strikethrough">Create by AI</span>
+                    </button>
+                    <button class="btn-make-order" id="make-order-btn">
+                        <i class="fas fa-shopping-cart"></i>
+                        Make an Order
+                    </button>
+                </div>
+
+            <!-- Language Selection Cards -->
+            <div class="language-section">
+                <h3>Quick Start</h3>
+                <p>Choose your preferred programming language to start coding</p>
+                <div class="language-cards">
+                    <div class="language-card" onclick="createBotProject('python')">
+                        <div class="language-icon python">
+                            <i class="fab fa-python"></i>
+                        </div>
+                        <div class="language-info">
+                            <h4>Python Bot</h4>
+                            <p>Build powerful bots with Python's simplicity</p>
+                        </div>
+                        <div class="language-action">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </div>
+
+                    <div class="language-card" onclick="createBotProject('javascript')">
+                        <div class="language-icon javascript">
+                            <i class="fab fa-js-square"></i>
+                        </div>
+                        <div class="language-info">
+                            <h4>JavaScript Bot</h4>
+                            <p>Create modern bots with JavaScript flexibility</p>
+                        </div>
+                        <div class="language-action">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

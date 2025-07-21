@@ -5,19 +5,48 @@ const OrderBot = require('./discord-bot');
 const Database = require('./database');
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 // Initialize Database
-const database = new Database();
+let database;
+try {
+    database = new Database();
+    console.log('✅ Database initialized');
+} catch (error) {
+    console.error('❌ Database initialization failed:', error);
+    // Create a fallback database object
+    database = {
+        createOrUpdateUser: async () => ({ id: 'fallback', username: 'user' }),
+        getUserById: async () => ({ id: 'fallback', username: 'user', plan: 'starter' }),
+        getUserUsage: async () => ({ command_count: 0, bot_count: 0, storage_used: 0 }),
+        updateUserUsage: async () => {},
+        resetUserUsage: async () => {},
+        getUserPlan: async () => 'starter'
+    };
+}
 
-// Initialize Discord Bot
-const discordBot = new OrderBot(database);
-discordBot.start().catch(console.error);
+// Initialize Discord Bot with error handling
+let discordBot;
+try {
+    discordBot = new OrderBot(database);
+    discordBot.start().catch(error => {
+        console.warn('⚠️ Discord bot failed to start:', error.message);
+        console.log('🌐 Web server will continue without Discord functionality');
+    });
+    console.log('🤖 Discord bot initialization attempted');
+} catch (error) {
+    console.warn('⚠️ Discord bot initialization failed:', error.message);
+    // Create fallback bot object
+    discordBot = {
+        processOrder: async () => ({ success: false, error: 'Discord bot unavailable' }),
+        sendDM: async () => ({ success: false, error: 'Discord bot unavailable' })
+    };
+}
 
 // Discord OAuth configuration
-const DISCORD_CLIENT_ID = '1372226433191247983';
-const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET || 'JQFKvaPblr4uXrbZZoU6YUuFR3uihpIa';
-const DISCORD_REDIRECT_URI = `${process.env.REPL_URL || 'https://android-m682.onrender.com'}/auth/discord/callback`;
+const DISCORD_CLIENT_ID = '1382392124619886652';
+const DISCORD_CLIENT_SECRET = '0GVe7ht4W-R1wMxxkq-mFBC1-CbpnD9E';
+const DISCORD_REDIRECT_URI = 'https://smart-serve-discord-bot--40493350.repl.co/auth/discord/callback';
 
 // Store sessions in memory (use Redis/database in production)
 const sessions = new Map();
@@ -105,7 +134,7 @@ app.get('/auth/discord/callback', async (req, res) => {
         // Get user information
         const userResponse = await fetch('https://discord.com/api/users/@me', {
             headers: {
-                'Authorization': `MTM3MjIyNjQzMzE5MTI0Nzk4Mw.GN2UGo.MKRZXArsCQMzwGhvHS5Ih44-RefuXicspOzcGk`,
+                'Authorization': `Bearer ${tokenData.access_token}`,
             },
         });
 
@@ -169,42 +198,21 @@ app.get('/auth/discord/callback', async (req, res) => {
                 </div>
                 <script>
                     try {
-                        // Add role and permissions for client-side auth
                         const userData = ${JSON.stringify(user)};
                         userData.role = userData.role || 'free';
                         userData.permissions = userData.permissions || ['view_templates', 'create_basic_bot'];
 
-                        // Clear any existing auth data first
-                        localStorage.removeItem('userData');
-                        localStorage.removeItem('loginTimestamp');
-                        sessionStorage.clear();
-
-                        // Set authentication data
                         localStorage.setItem('userData', JSON.stringify(userData));
                         localStorage.setItem('loginTimestamp', '${Date.now()}');
-
-                        // Generate client-side compatible session token
-                        const secret = 'smart-serve-secret-key';
-                        const timestamp = '${Date.now()}';
-                        const clientSessionToken = btoa(userData.id + secret + timestamp).slice(0, 32);
-                        sessionStorage.setItem('sessionToken', clientSessionToken);
-
-                        // Set server session token for API calls
-                        sessionStorage.setItem('serverSessionToken', '${sessionId}');
-
-                        // Mark authentication as complete to prevent auth.js from interfering
+                        sessionStorage.setItem('sessionToken', '${sessionId}');
                         sessionStorage.setItem('authComplete', 'true');
 
-                        console.log('Auth data set successfully');
-
-                        // Redirect after a short delay to ensure data is saved
                         setTimeout(() => {
                             window.location.replace('/bot-builder.html');
-                        }, 500);
+                        }, 1000);
 
                     } catch (error) {
                         console.error('Error during authentication setup:', error);
-                        alert('Authentication error. Please try logging in again.');
                         window.location.href = '/login.html';
                     }
                 </script>
@@ -218,6 +226,24 @@ app.get('/auth/discord/callback', async (req, res) => {
     }
 });
 
+// Protected routes middleware
+function requireAuth(req, res, next) {
+    const sessionToken = req.headers.authorization?.replace('Bearer ', '');
+
+    if (!sessionToken || !sessions.has(sessionToken)) {
+        return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const session = sessions.get(sessionToken);
+    if (Date.now() - session.timestamp > 24 * 60 * 60 * 1000) {
+        sessions.delete(sessionToken);
+        return res.status(401).json({ error: 'Session expired' });
+    }
+
+    req.user = session.user;
+    next();
+}
+
 // API endpoint to check auth status
 app.get('/api/auth/status', (req, res) => {
     const sessionToken = req.headers.authorization?.replace('Bearer ', '');
@@ -227,8 +253,6 @@ app.get('/api/auth/status', (req, res) => {
     }
 
     const session = sessions.get(sessionToken);
-
-    // Check if session is expired (24 hours)
     if (Date.now() - session.timestamp > 24 * 60 * 60 * 1000) {
         sessions.delete(sessionToken);
         return res.status(401).json({ authenticated: false });
@@ -251,37 +275,16 @@ app.post('/api/auth/logout', (req, res) => {
     res.json({ success: true });
 });
 
-// Protected routes middleware
-function requireAuth(req, res, next) {
-    const sessionToken = req.headers.authorization?.replace('Bearer ', '');
-
-    if (!sessionToken || !sessions.has(sessionToken)) {
-        return res.redirect('/login.html');
-    }
-
-    const session = sessions.get(sessionToken);
-    if (Date.now() - session.timestamp > 24 * 60 * 60 * 1000) {
-        sessions.delete(sessionToken);
-        return res.redirect('/login.html');
-    }
-
-    req.user = session.user;
-    next();
-}
-
-// Orders are now stored in PostgreSQL database
-
 // Order processing endpoint
 app.post('/api/order', requireAuth, async (req, res) => {
     try {
         const { content } = req.body;
-        const userId = req.user.id; // Discord user ID from session
+        const userId = req.user.id;
 
         if (!content || !content.trim()) {
             return res.status(400).json({ error: 'Order content is required' });
         }
 
-        // Generate order data
         const orderData = {
             orderId: `order_${Date.now()}_${userId}`,
             orderNumber: Date.now().toString().slice(-6),
@@ -290,10 +293,7 @@ app.post('/api/order', requireAuth, async (req, res) => {
             status: '⏳ Pending Admin Response'
         };
 
-        // Store order in database
-        const savedOrder = await database.createOrder(orderData);
-
-        // Process the order through Discord bot
+        await database.createOrder(orderData);
         await discordBot.processOrder(userId, content.trim());
 
         res.json({ 
@@ -310,14 +310,12 @@ app.post('/api/order', requireAuth, async (req, res) => {
     }
 });
 
-// Get user orders endpoint
+// Get user orders
 app.get('/api/user/orders', requireAuth, async (req, res) => {
     try {
         const userId = req.user.id;
         const orders = await database.getUserOrders(userId);
-
         res.json(orders);
-
     } catch (error) {
         console.error('Error fetching user orders:', error);
         res.status(500).json({ error: 'Failed to fetch orders' });
@@ -347,12 +345,10 @@ app.post('/api/order/cancel', requireAuth, async (req, res) => {
     }
 });
 
-// Get all orders for bots page (public endpoint)
+// Get public orders
 app.get('/api/orders/public', async (req, res) => {
     try {
         const completedOrders = await database.getCompletedOrders();
-
-        // Format response to match frontend expectations
         const formattedOrders = completedOrders.map(order => ({
             orderId: order.order_id,
             orderNumber: order.order_number,
@@ -366,7 +362,6 @@ app.get('/api/orders/public', async (req, res) => {
         }));
 
         res.json(formattedOrders);
-
     } catch (error) {
         console.error('Error fetching public orders:', error);
         res.status(500).json({ error: 'Failed to fetch orders' });
@@ -378,10 +373,8 @@ app.get('/api/user/code', requireAuth, async (req, res) => {
     try {
         const userId = req.user.id;
         const orderNumber = req.query.order;
-
         const codeFiles = await database.getUserCode(userId, orderNumber);
 
-        // Convert to object format expected by frontend
         const userCodeObj = {};
         codeFiles.forEach(file => {
             userCodeObj[file.filename] = {
@@ -394,7 +387,6 @@ app.get('/api/user/code', requireAuth, async (req, res) => {
         });
 
         res.json(userCodeObj);
-
     } catch (error) {
         console.error('Error fetching user code:', error);
         res.status(500).json({ error: 'Failed to fetch code files' });
@@ -429,7 +421,83 @@ app.get('/api/order/:orderNumber/code', requireAuth, async (req, res) => {
     }
 });
 
-// Protected pages - let client-side auth handle protection
+// Save bot to gallery
+app.post('/api/bots/save', requireAuth, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { projectId, name, description, files, language, status } = req.body;
+
+        // Calculate file count and size
+        const fileCount = files ? files.length : 0;
+        const sizeBytes = files ? JSON.stringify(files).length : 0;
+
+        const botData = {
+            projectId,
+            name,
+            description,
+            language,
+            status,
+            fileCount,
+            sizeBytes
+        };
+
+        const savedBot = await database.saveUserBot(userId, botData);
+
+        res.json({
+            success: true,
+            bot: savedBot
+        });
+
+    } catch (error) {
+        console.error('Error saving bot:', error);
+        res.status(500).json({ error: 'Failed to save bot' });
+    }
+});
+
+// Get user bots
+app.get('/api/user/bots', requireAuth, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const bots = await database.getUserBots(userId);
+        res.json(bots);
+    } catch (error) {
+        console.error('Error fetching user bots:', error);
+        res.status(500).json({ error: 'Failed to fetch bots' });
+    }
+});
+
+// Get user usage statistics
+app.get('/api/user/usage', requireAuth, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const usage = await database.getUserUsage(userId);
+
+        // Get plan limits
+        const planLimits = {
+            starter: { commands: 50, bots: 3, storage: 100 * 1024 * 1024 }, // 100MB
+            premium: { commands: 100, bots: 5, storage: 500 * 1024 * 1024 }, // 500MB
+            pro: { commands: -1, bots: -1, storage: -1 } // Unlimited
+        };
+
+        const userPlan = usage.plan || 'starter';
+        const limits = planLimits[userPlan];
+
+        res.json({
+            usage: {
+                commands: usage.command_count || 0,
+                bots: usage.bot_count || 0,
+                storage: usage.storage_used || 0
+            },
+            limits,
+            plan: userPlan
+        });
+    } catch (error) {
+        console.error('Error fetching user usage:', error);
+        res.status(500).json({ error: 'Failed to fetch usage data' });
+    }
+});
+
+// Static pages
 app.get('/bot-builder.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'bot-builder.html'));
 });
@@ -438,45 +506,9 @@ app.get('/template.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'template.html'));
 });
 
-// API endpoint to get public orders for gallery
-app.get('/api/orders/public', async (req, res) => {
-    try {
-        const completedOrders = await database.getCompletedOrders();
-
-        // Format response to match frontend expectations
-        const formattedOrders = completedOrders.map(order => ({
-            orderId: order.order_id,
-            orderNumber: order.order_number,
-            content: order.content,
-            status: order.status,
-            createdAt: order.created_at,
-            userInfo: {
-                username: order.username,
-                avatar: order.avatar
-            }
-        }));
-
-        res.json(formattedOrders);
-
-    } catch (error) {
-        console.error('Error fetching public orders:', error);
-        res.status(500).json({ error: 'Failed to fetch orders' });
-    }
+app.get('/coding-environment.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'coding-environment.html'));
 });
-
-// Middleware to authenticate the token
-function authenticateToken(req, res, next) {
-    const authHeader = req.headers['authorization']
-    const token = authHeader && authHeader.split(' ')[1]
-
-    if (token == null) return res.sendStatus(401)
-
-    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-        if (err) return res.sendStatus(403)
-        req.user = user
-        next()
-    })
-}
 
 // API endpoint to use template and save to user's bots
 app.post('/api/templates/use', requireAuth, async (req, res) => {
@@ -511,9 +543,191 @@ app.post('/api/templates/use', requireAuth, async (req, res) => {
     }
 });
 
-// Start server
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on http://0.0.0.0:${PORT}`);
-    console.log(`Server running on http://0.0.0.0:${PORT}`);
-    console.log(`Please set up your Discord OAuth app with redirect URI: ${DISCORD_REDIRECT_URI}`);
+// Execution endpoints
+const { spawn } = require('child_process');
+const fs = require('fs');
+const WebSocket = require('ws');
+
+// Store running processes
+const runningProcesses = new Map();
+
+// Execute JavaScript endpoint
+app.post('/api/execute/javascript', requireAuth, async (req, res) => {
+    try {
+        const { fileName, code, projectId } = req.body;
+        const processId = `js_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+        // Create temp directory
+        const tempDir = `/tmp/${processId}`;
+        if (!fs.existsSync(tempDir)) {
+            fs.mkdirSync(tempDir, { recursive: true });
+        }
+
+        // Write file
+        const filePath = `${tempDir}/${fileName}`;
+        fs.writeFileSync(filePath, code);
+
+        res.json({ success: true, processId });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Execute Python endpoint
+app.post('/api/execute/python', requireAuth, async (req, res) => {
+    try {
+        const { fileName, code, projectId } = req.body;
+        const processId = `py_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+        // Create temp directory
+        const tempDir = `/tmp/${processId}`;
+        if (!fs.existsSync(tempDir)) {
+            fs.mkdirSync(tempDir, { recursive: true });
+        }
+
+        // Write file
+        const filePath = `${tempDir}/${fileName}`;
+        fs.writeFileSync(filePath, code);
+
+        res.json({ success: true, processId });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Stop execution endpoint
+app.post('/api/execute/stop', requireAuth, async (req, res) => {
+    try {
+        const { processId } = req.body;
+
+        if (runningProcesses.has(processId)) {
+            const process = runningProcesses.get(processId);
+            process.kill('SIGTERM');
+            runningProcesses.delete(processId);
+        }
+
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// WebSocket server for execution streams
+const wss = new WebSocket.Server({ port: 5001 });
+
+wss.on('connection', (ws, req) => {
+    const processId = req.url.split('/').pop();
+
+    if (processId.startsWith('js_')) {
+        // Execute JavaScript
+        const tempDir = `/tmp/${processId}`;
+        const fileName = fs.readdirSync(tempDir).find(f => f.endsWith('.js'));
+
+        if (fileName) {
+            const process = spawn('node', [fileName], { cwd: tempDir });
+            runningProcesses.set(processId, process);
+
+            process.stdout.on('data', (data) => {
+                ws.send(JSON.stringify({ type: 'stdout', data: data.toString() }));
+            });
+
+            process.stderr.on('data', (data) => {
+                ws.send(JSON.stringify({ type: 'stderr', data: data.toString() }));
+            });
+
+            process.on('close', (code) => {
+                ws.send(JSON.stringify({ type: 'exit', code }));
+                runningProcesses.delete(processId);
+                ws.close();
+            });
+        }
+    } else if (processId.startsWith('py_')) {
+        // Execute Python
+        const tempDir = `/tmp/${processId}`;
+        const fileName = fs.readdirSync(tempDir).find(f => f.endsWith('.py'));
+
+        if (fileName) {
+            const process = spawn('python3', [fileName], { cwd: tempDir });
+            runningProcesses.set(processId, process);
+
+            process.stdout.on('data', (data) => {
+                ws.send(JSON.stringify({ type: 'stdout', data: data.toString() }));
+            });
+
+            process.stderr.on('data', (data) => {
+                ws.send(JSON.stringify({ type: 'stderr', data: data.toString() }));
+            });
+
+            process.on('close', (code) => {
+                ws.send(JSON.stringify({ type: 'exit', code }));
+                runningProcesses.delete(processId);
+                ws.close();
+            });
+        }
+    }
+});
+
+// Contact form endpoint - sends DM via Discord
+app.post('/api/contact', async (req, res) => {
+    try {
+        const { name, email, subject, message } = req.body;
+
+        if (!name || !email || !subject || !message) {
+            return res.status(400).json({ error: 'All fields are required' });
+        }
+
+        // Your Discord User ID (replace with actual ID)
+        const ADMIN_USER_ID = '1382392124619886652'; // Replace with your Discord user ID
+
+        // Format the contact message
+        const contactEmbed = {
+            title: '🌟 New Contact Form Submission',
+            color: 0x5865f2,
+            fields: [
+                { name: '👤 Name', value: name, inline: true },
+                { name: '📧 Email', value: email, inline: true },
+                { name: '📝 Subject', value: subject, inline: false },
+                { name: '💬 Message', value: message, inline: false },
+                { name: '🕒 Received', value: new Date().toLocaleString(), inline: true }
+            ],
+            footer: { text: 'Smart Serve Contact Form' }
+        };
+
+        // Send DM through Discord bot
+        await discordBot.sendDM(ADMIN_USER_ID, { embeds: [contactEmbed] });
+
+        res.json({ 
+            success: true, 
+            message: 'Message sent successfully! We\'ll get back to you soon.' 
+        });
+
+    } catch (error) {
+        console.error('Contact form error:', error);
+        res.status(500).json({ 
+            error: 'Failed to send message. Please try again.' 
+        });
+    }
+});
+
+// Start server with error handling
+const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`✅ Server running on http://0.0.0.0:${PORT}`);
+    console.log(`🔌 WebSocket server running on port 5001`);
+    console.log(`🔗 Discord OAuth redirect URI: ${DISCORD_REDIRECT_URI}`);
+    console.log(`🚀 Server started successfully!`);
+}).on('error', (err) => {
+    console.error('❌ Server startup error:', err);
+    if (err.code === 'EADDRINUSE') {
+        console.log('Port 5000 is already in use. Trying port 5001...');
+        server.listen(5001, '0.0.0.0');
+    }
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (err) => {
+    console.error('❌ Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
 });
