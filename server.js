@@ -75,9 +75,7 @@ app.get('/', (req, res) => {
 });
 
 // Discord OAuth initiation
-
-
-    app.get('/auth/discord', (req, res) => {
+app.get('/auth/discord', (req, res) => {
     const state = generateState();
     sessions.set(state, { timestamp: Date.now() });
     
