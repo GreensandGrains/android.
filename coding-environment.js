@@ -51,14 +51,13 @@ main();
 // Initialize the IDE
 document.addEventListener('DOMContentLoaded', function() {
     initializeIDE();
-    initializeAIAssistant();
 });
 
 async function initializeIDE() {
     showLoadingScreen();
 
-    // Simulate loading delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Simulate loading delay with realistic progress
+    await simulateLoadingWithProgress();
 
     hideLoadingScreen();
 
@@ -67,6 +66,7 @@ async function initializeIDE() {
     initializeEventListeners();
     setupConsole();
     checkAuthentication();
+    await initializeAISystem();
 
     // Load project if specified
     const urlParams = new URLSearchParams(window.location.search);
@@ -79,7 +79,7 @@ async function initializeIDE() {
         showWelcomeScreen();
     }
 
-    console.log('🚀 Smart Serve IDE initialized successfully!');
+    console.log('🚀 Smart Serve IDE with Ultra-Advanced AI initialized successfully!');
 }
 
 function showLoadingScreen() {
@@ -1793,4 +1793,50 @@ function addPackageToList(packageName) {
     packageList.appendChild(packageItem);
 }
 
-console.log('🎉 Smart Serve IDE loaded successfully!');
+// Utility functions
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        console.log('Code copied to clipboard');
+    });
+}
+
+// Additional functions for collaboration and deployment
+function openCollaboration() {
+    alert('Collaboration features coming soon! Share your bot projects with team members.');
+}
+
+function deployBot() {
+    alert('Deployment wizard coming soon! Deploy your bot to cloud platforms with one click.');
+}
+
+function toggleVoiceInput() {
+    alert('Voice input feature coming soon! Talk to your AI assistant naturally.');
+}
+
+// Initialize AI assistant (legacy function)
+function initializeAIAssistant() {
+    console.log('AI Assistant legacy function - now handled by initializeAISystem');
+}
+
+// Make functions globally available for HTML onclick handlers
+window.toggleAIAssistant = toggleAIAssistant;
+window.switchAIMode = switchAIMode;
+window.sendAIMessage = sendAIMessage;
+window.askAI = askAI;
+window.generateAdvancedBot = generateAdvancedBot;
+window.runDeepAnalysis = runDeepAnalysis;
+window.predictErrors = predictErrors;
+window.securityScan = securityScan;
+window.performanceAnalysis = performanceAnalysis;
+window.quickAction = quickAction;
+window.openCollaboration = openCollaboration;
+window.deployBot = deployBot;
+window.toggleVoiceInput = toggleVoiceInput;
+
+console.log('🎉 Smart Serve IDE with Ultra-Advanced AI loaded successfully!');

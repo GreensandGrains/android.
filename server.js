@@ -7,8 +7,11 @@ const WebSocket = require('ws');
 const OrderBot = require('./discord-bot');
 const Database = require('./database');
 
+// Add fetch support for Node.js versions < 18
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 
 // Initialize Database
 let database;
@@ -47,16 +50,15 @@ try {
 }
 
 // Discord OAuth configuration
-const DISCORD_CLIENT_ID = '1372226433191247983';
-const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET || 'xSN3hlhYuPX5RaRN9aNRk6Dw22kLK9sx';
-const DISCORD_REDIRECT_URI = 'https://android-m682.onrender.com/auth/discord/callback';
+const DISCORD_CLIENT_ID = '1382392124619886652';
+const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET || '0GVe7ht4W-R1wMxxkq-mFBC1-CbpnD9E';
+const DISCORD_REDIRECT_URI = `http://localhost:${PORT}/auth/discord/callback`;
 
 // Store sessions in memory (use Redis/database in production)
 const sessions = new Map();
 
 // Middleware
 app.use(express.json());
-app.use(express.static('.'));
 app.use(express.urlencoded({ extended: true }));
 
 // CORS middleware
@@ -72,9 +74,50 @@ function generateState() {
     return crypto.randomBytes(16).toString('hex');
 }
 
-// Home route
+// Root route - serve index.html explicitly
 app.get('/', (req, res) => {
+    console.log('Serving index.html from:', path.join(__dirname, 'index.html'));
     res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Serve other HTML files explicitly 
+app.get('/login.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'login.html'));
+});
+
+app.get('/bot-builder.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'bot-builder.html'));
+});
+
+app.get('/coding-environment.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'coding-environment.html'));
+});
+
+app.get('/template.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'template.html'));
+});
+
+app.get('/bots.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'bots.html'));
+});
+
+app.get('/profile.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'profile.html'));
+});
+
+app.get('/upgrade.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'upgrade.html'));
+});
+
+// Static files middleware - place after explicit routes
+app.use(express.static(__dirname, {
+    index: false, // Disable automatic index serving
+    dotfiles: 'deny',
+    maxAge: '1d'
+}));
+
+app.get('/template.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'template.html'));
 });
 
 // Discord OAuth initiation

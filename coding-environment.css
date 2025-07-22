@@ -1409,3 +1409,315 @@ body {
     transform: translateY(-2px);
     box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
 }
+
+/* Ultra-Advanced AI Assistant Panel Styles */
+.ai-assistant-panel {
+    position: fixed;
+    top: 0;
+    right: -500px;
+    width: 500px;
+    height: 100vh;
+    background: var(--bg-secondary);
+    border-left: 1px solid var(--border-default);
+    z-index: 1000;
+    transition: right 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.ai-assistant-panel.active {
+    right: 0;
+}
+
+.ai-panel-header {
+    padding: 16px;
+    border-bottom: 1px solid var(--border-default);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg-tertiary);
+}
+
+.ai-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.ai-icon {
+    color: var(--accent-primary);
+    font-size: 20px;
+    animation: aiPulse 2s infinite;
+}
+
+.ai-brain-animation {
+    width: 20px;
+    height: 20px;
+    position: relative;
+}
+
+.brain-pulse {
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, var(--accent-primary), transparent);
+    border-radius: 50%;
+    animation: brainPulse 1.5s infinite;
+}
+
+.ai-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.ai-mode-btn {
+    padding: 6px 12px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-default);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.ai-mode-btn:hover {
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+}
+
+.ai-mode-btn.active {
+    background: var(--accent-primary);
+    color: white;
+    border-color: var(--accent-primary);
+}
+
+.close-ai-btn {
+    padding: 6px;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.close-ai-btn:hover {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.ai-panel-content {
+    flex: 1;
+    overflow: hidden;
+}
+
+.ai-mode-panel {
+    height: 100%;
+    padding: 16px;
+    display: none;
+    flex-direction: column;
+}
+
+.ai-mode-panel.active {
+    display: flex;
+}
+
+/* Chat Mode Styles */
+.ai-conversation {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 16px;
+}
+
+.ai-message {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.ai-message-assistant .ai-avatar {
+    width: 32px;
+    height: 32px;
+    background: var(--accent-primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 14px;
+}
+
+.ai-message-content {
+    flex: 1;
+    background: var(--bg-tertiary);
+    border-radius: 12px;
+    padding: 12px;
+}
+
+.ai-message-text {
+    color: var(--text-primary);
+    line-height: 1.5;
+    margin-bottom: 12px;
+}
+
+.ai-message-text ul {
+    margin: 8px 0;
+    padding-left: 20px;
+}
+
+.ai-message-text li {
+    margin: 4px 0;
+}
+
+.ai-message-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.ai-suggestion-btn {
+    padding: 6px 12px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-default);
+    border-radius: 16px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.ai-suggestion-btn:hover {
+    background: var(--accent-primary);
+    color: white;
+    border-color: var(--accent-primary);
+}
+
+.ai-input-wrapper {
+    position: relative;
+    background: var(--bg-tertiary);
+    border-radius: 12px;
+    padding: 12px;
+    margin-top: auto;
+}
+
+.ai-input-wrapper textarea {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    resize: none;
+    outline: none;
+}
+
+.ai-input-wrapper textarea::placeholder {
+    color: var(--text-muted);
+}
+
+.ai-input-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    justify-content: flex-end;
+}
+
+.ai-voice-btn, .ai-send-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.ai-voice-btn {
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+}
+
+.ai-voice-btn:hover {
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+}
+
+.ai-send-btn {
+    background: var(--accent-primary);
+    color: white;
+}
+
+.ai-send-btn:hover {
+    background: var(--accent-secondary);
+    animation: aiGlow 1s ease;
+}
+
+.ai-quick-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+
+.quick-action-btn {
+    padding: 4px 8px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-default);
+    border-radius: 12px;
+    color: var(--text-secondary);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.quick-action-btn:hover {
+    background: var(--accent-primary);
+    color: white;
+    border-color: var(--accent-primary);
+}
+
+/* AI Assistant Button Enhancement */
+.ai-assistant-btn {
+    position: relative;
+}
+
+.ai-assistant-btn .ai-status-indicator {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-primary);
+    animation: aiPulse 2s infinite;
+}
+
+/* Animation Keyframes */
+@keyframes aiPulse {
+    0%, 100% { opacity: 0.5; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.1); }
+}
+
+@keyframes brainPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+}
+
+@keyframes aiGlow {
+    0%, 100% { box-shadow: 0 0 5px var(--accent-primary); }
+    50% { box-shadow: 0 0 20px var(--accent-primary), 0 0 30px var(--accent-primary); }
+}

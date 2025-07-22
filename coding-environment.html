@@ -3,9 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Serve IDE - Replit Style</title>
+    <title>Smart Serve IDE - AI-Powered Development Environment</title>
+    <meta name="description" content="Advanced IDE with AI assistant for Discord bot development">
+    <link href="enhanced-global.css" rel="stylesheet" type="text/css" />
+    <link href="advanced-ide-features.css" rel="stylesheet" type="text/css" />
     <link href="coding-environment.css" rel="stylesheet" type="text/css" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
@@ -13,6 +16,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="ultra-ai-system.js"></script>
+    <script src="friendly-ai-personality.js"></script>
+    <script src="replit-style-features.js"></script>
+    <script src="enhanced-page-beautifier.js"></script>
 </head>
 <body>
     <!-- Loading Screen -->
@@ -62,7 +69,19 @@
         </div>
 
         <div class="navbar-right">
-            
+            <button class="action-btn ai-assistant-btn" onclick="toggleAIAssistant()">
+                <i class="fas fa-robot"></i>
+                <span>AI Assistant</span>
+                <div class="ai-status-indicator active"></div>
+            </button>
+            <button class="action-btn" onclick="openCollaboration()">
+                <i class="fas fa-users"></i>
+                <span>Share</span>
+            </button>
+            <button class="action-btn" onclick="deployBot()">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <span>Deploy</span>
+            </button>
             <button class="action-btn" onclick="downloadProject()">
                 <i class="fas fa-download"></i>
                 <span>Download ZIP</span>
@@ -319,6 +338,272 @@
             <div class="modal-footer">
                 <button class="btn secondary" onclick="closeModal('fileModal')">Cancel</button>
                 <button class="btn primary" onclick="createFile()">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ultra-Advanced AI Assistant Panel -->
+    <div class="ai-assistant-panel" id="aiAssistantPanel">
+        <div class="ai-panel-header">
+            <div class="ai-title">
+                <i class="fas fa-robot ai-icon"></i>
+                <span>Smart Serve AI Assistant</span>
+                <div class="ai-brain-animation">
+                    <div class="brain-pulse"></div>
+                </div>
+            </div>
+            <div class="ai-controls">
+                <button class="ai-mode-btn active" data-mode="chat">
+                    <i class="fas fa-comments"></i>
+                    <span>Chat</span>
+                </button>
+                <button class="ai-mode-btn" data-mode="code">
+                    <i class="fas fa-code"></i>
+                    <span>Code Gen</span>
+                </button>
+                <button class="ai-mode-btn" data-mode="debug">
+                    <i class="fas fa-bug"></i>
+                    <span>Debug</span>
+                </button>
+                <button class="ai-mode-btn" data-mode="optimize">
+                    <i class="fas fa-rocket"></i>
+                    <span>Optimize</span>
+                </button>
+                <button class="close-ai-btn" onclick="toggleAIAssistant()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="ai-panel-content">
+            <!-- Chat Mode -->
+            <div class="ai-mode-panel active" id="ai-chat-panel">
+                <div class="ai-conversation" id="aiConversation">
+                    <div class="ai-message ai-message-assistant">
+                        <div class="ai-avatar">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="ai-message-content">
+                            <div class="ai-message-text">
+                                Hello! I'm your ultra-advanced AI assistant for Discord bot development. I can help you with:
+                                <ul>
+                                    <li>🧠 Generate complete Discord bots from natural language</li>
+                                    <li>🔍 Real-time code analysis and optimization</li>
+                                    <li>🐛 Advanced debugging and error prediction</li>
+                                    <li>⚡ Performance optimization and scaling</li>
+                                    <li>🔒 Security analysis and vulnerability detection</li>
+                                    <li>📚 Best practices and architecture patterns</li>
+                                </ul>
+                                What would you like to create today?
+                            </div>
+                            <div class="ai-message-actions">
+                                <button class="ai-suggestion-btn" onclick="askAI('Create a moderation bot with advanced features')">
+                                    <i class="fas fa-shield-alt"></i>
+                                    Moderation Bot
+                                </button>
+                                <button class="ai-suggestion-btn" onclick="askAI('Build a music bot with queue system')">
+                                    <i class="fas fa-music"></i>
+                                    Music Bot
+                                </button>
+                                <button class="ai-suggestion-btn" onclick="askAI('Generate an economy bot with database')">
+                                    <i class="fas fa-coins"></i>
+                                    Economy Bot
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="ai-input-container">
+                    <div class="ai-input-wrapper">
+                        <textarea 
+                            id="aiChatInput" 
+                            placeholder="Ask me anything about Discord bot development..."
+                            rows="3"
+                        ></textarea>
+                        <div class="ai-input-actions">
+                            <button class="ai-voice-btn" onclick="toggleVoiceInput()">
+                                <i class="fas fa-microphone"></i>
+                            </button>
+                            <button class="ai-send-btn" onclick="sendAIMessage()">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="ai-quick-actions">
+                        <button class="quick-action-btn" onclick="quickAction('explain')">
+                            <i class="fas fa-question-circle"></i>
+                            Explain Code
+                        </button>
+                        <button class="quick-action-btn" onclick="quickAction('optimize')">
+                            <i class="fas fa-rocket"></i>
+                            Optimize
+                        </button>
+                        <button class="quick-action-btn" onclick="quickAction('debug')">
+                            <i class="fas fa-bug"></i>
+                            Find Bugs
+                        </button>
+                        <button class="quick-action-btn" onclick="quickAction('security')">
+                            <i class="fas fa-shield-alt"></i>
+                            Security Check
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Code Generation Mode -->
+            <div class="ai-mode-panel" id="ai-code-panel">
+                <div class="code-gen-interface">
+                    <div class="code-gen-header">
+                        <h3>🧠 Neural Code Generator</h3>
+                        <p>Describe your Discord bot and I'll generate complete, production-ready code</p>
+                    </div>
+                    <div class="code-gen-form">
+                        <div class="form-group">
+                            <label>Bot Description</label>
+                            <textarea id="botDescription" placeholder="Describe what you want your bot to do..." rows="4"></textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Bot Type</label>
+                                <select id="botType">
+                                    <option value="moderation">Moderation Bot</option>
+                                    <option value="music">Music Bot</option>
+                                    <option value="economy">Economy Bot</option>
+                                    <option value="gaming">Gaming Bot</option>
+                                    <option value="utility">Utility Bot</option>
+                                    <option value="custom">Custom Bot</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Complexity</label>
+                                <select id="botComplexity">
+                                    <option value="basic">Basic</option>
+                                    <option value="intermediate">Intermediate</option>
+                                    <option value="advanced">Advanced</option>
+                                    <option value="enterprise">Enterprise</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Features (Select multiple)</label>
+                            <div class="feature-checkboxes">
+                                <label><input type="checkbox" value="slash_commands"> Slash Commands</label>
+                                <label><input type="checkbox" value="database"> Database Storage</label>
+                                <label><input type="checkbox" value="web_dashboard"> Web Dashboard</label>
+                                <label><input type="checkbox" value="api_integration"> API Integration</label>
+                                <label><input type="checkbox" value="ai_features"> AI Features</label>
+                                <label><input type="checkbox" value="voice_support"> Voice Support</label>
+                            </div>
+                        </div>
+                        <button class="generate-btn" onclick="generateAdvancedBot()">
+                            <i class="fas fa-magic"></i>
+                            Generate Ultra-Advanced Bot
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Debug Mode -->
+            <div class="ai-mode-panel" id="ai-debug-panel">
+                <div class="debug-interface">
+                    <div class="debug-header">
+                        <h3>🐛 AI Debugger & Error Predictor</h3>
+                        <p>Advanced error detection and bug prediction using neural networks</p>
+                    </div>
+                    <div class="debug-controls">
+                        <button class="debug-btn" onclick="runDeepAnalysis()">
+                            <i class="fas fa-search"></i>
+                            Deep Code Analysis
+                        </button>
+                        <button class="debug-btn" onclick="predictErrors()">
+                            <i class="fas fa-crystal-ball"></i>
+                            Predict Future Errors
+                        </button>
+                        <button class="debug-btn" onclick="securityScan()">
+                            <i class="fas fa-shield-alt"></i>
+                            Security Vulnerability Scan
+                        </button>
+                        <button class="debug-btn" onclick="performanceAnalysis()">
+                            <i class="fas fa-tachometer-alt"></i>
+                            Performance Analysis
+                        </button>
+                    </div>
+                    <div class="debug-results" id="debugResults">
+                        <div class="debug-placeholder">
+                            <i class="fas fa-bug"></i>
+                            <p>Select code and run analysis to see detailed debugging information</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Optimize Mode -->
+            <div class="ai-mode-panel" id="ai-optimize-panel">
+                <div class="optimize-interface">
+                    <div class="optimize-header">
+                        <h3>⚡ Quantum Code Optimizer</h3>
+                        <p>Advanced optimization using quantum-inspired algorithms</p>
+                    </div>
+                    <div class="optimization-metrics">
+                        <div class="metric-card">
+                            <div class="metric-icon"><i class="fas fa-clock"></i></div>
+                            <div class="metric-content">
+                                <div class="metric-label">Execution Time</div>
+                                <div class="metric-value" id="executionTime">--</div>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-icon"><i class="fas fa-memory"></i></div>
+                            <div class="metric-content">
+                                <div class="metric-label">Memory Usage</div>
+                                <div class="metric-value" id="memoryUsage">--</div>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-icon"><i class="fas fa-chart-line"></i></div>
+                            <div class="metric-content">
+                                <div class="metric-label">Performance Score</div>
+                                <div class="metric-value" id="performanceScore">--</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="optimize-controls">
+                        <button class="optimize-btn" onclick="optimizePerformance()">
+                            <i class="fas fa-rocket"></i>
+                            Optimize Performance
+                        </button>
+                        <button class="optimize-btn" onclick="optimizeMemory()">
+                            <i class="fas fa-memory"></i>
+                            Optimize Memory
+                        </button>
+                        <button class="optimize-btn" onclick="optimizeReadability()">
+                            <i class="fas fa-eye"></i>
+                            Optimize Readability
+                        </button>
+                        <button class="optimize-btn" onclick="optimizeSize()">
+                            <i class="fas fa-compress"></i>
+                            Optimize Size
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Status Bar -->
+        <div class="ai-status-bar">
+            <div class="ai-status-info">
+                <div class="ai-status-indicator active"></div>
+                <span>AI Neural Network Active</span>
+                <div class="ai-processing-indicator" id="aiProcessing">
+                    <div class="processing-dot"></div>
+                    <div class="processing-dot"></div>
+                    <div class="processing-dot"></div>
+                </div>
+            </div>
+            <div class="ai-stats">
+                <span id="aiTokenCount">Tokens: 0</span>
+                <span id="aiConfidence">Confidence: 98%</span>
+                <span id="aiResponseTime">Response: <1s</span>
             </div>
         </div>
     </div>
