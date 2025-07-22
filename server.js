@@ -52,7 +52,7 @@ try {
 // Discord OAuth configuration
 const DISCORD_CLIENT_ID = '1382392124619886652';
 const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET || '0GVe7ht4W-R1wMxxkq-mFBC1-CbpnD9E';
-const DISCORD_REDIRECT_URI = `http://localhost:${PORT}/auth/discord/callback`;
+const DISCORD_REDIRECT_URI = `https://android-m682.onrender.com/auth/discord/callback`;
 
 // Store sessions in memory (use Redis/database in production)
 const sessions = new Map();
